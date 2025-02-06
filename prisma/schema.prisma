@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  username        String    @unique
+  bio             String?
+  avatar  String?   // IPFS/Ceramic link
+  email           String?   @unique
+  nonce           String    // For wallet authentication
+  turnkeyWallet   String?   // For turnkey wallet setup
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  web3Accounts    Web3Account[]
+  
+  socialAccounts  SocialAccount[]
+  
+  // Relationships
+  followers       Follow[]  @relation("UserFollowers")
+  following       Follow[]  @relation("UserFollowing")
+  
+}
+
+model Web3Account {
+  id        String   @id @default(uuid())
+  userId    String
+  address   String
+  chain     Chain
+  isVerified Boolean @default(false)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([address, chain])
+  @@index([userId])
+}
+
+model SocialAccount {
+  id         String   @id @default(uuid())
+  userId     String
+  platform   SocialPlatform
+  username   String
+  isVerified Boolean  @default(false)
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([platform, username])
+  @@index([userId])
+}
+
+model Follow {
+  id            String   @id @default(uuid())
+  followerId    String
+  followingId   String
+  createdAt     DateTime @default(now())
+  follower      User     @relation("UserFollowers", fields: [followerId], references: [id])
+  following     User     @relation("UserFollowing", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+enum Chain {
+  EVM
+  SOLANA
+}
+
+enum SocialPlatform {
+  TWITTER
+  GITHUB
+  DISCORD
+}
