@@ -62,7 +62,7 @@ After installing PostgreSQL, you can create a new database. You can do this usin
 
 3. Create a new database:
    ```sql
-   CREATE DATABASE your_database_name;
+   CREATE DATABASE bloom_server_db;
    ```
 
 4. Exit the PostgreSQL prompt:
