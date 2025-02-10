@@ -35,9 +35,10 @@ cp .env.example .env
 
 Open `.env` and add the necessary API keys:
 
-```
-NODE_ENV=
-DATABASE_URL
+```sh
+NODE_ENV=''
+DATABASE_URL=''
+PORT=''
 ```
 
 ## Setting Up PostgreSQL Database and Running Prisma
