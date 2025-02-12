@@ -11,7 +11,7 @@ model User {
   id              String    @id @default(uuid())
   username        String    @unique
   bio             String?
-  avatar  String?   // IPFS/Ceramic link
+  avatar          String?   
   email           String?   @unique
   nonce           String    // For wallet authentication
   turnkeyWallet   String?   // For turnkey wallet setup
@@ -19,22 +19,25 @@ model User {
   updatedAt       DateTime  @updatedAt
 
   web3Accounts    Web3Account[]
-  
   socialAccounts  SocialAccount[]
-  
+
   // Relationships
   followers       Follow[]  @relation("UserFollowers")
   following       Follow[]  @relation("UserFollowing")
-  
+  posts           Post[]
+  comments        Comment[]
+  likes           Like[]
 }
 
 model Web3Account {
   id        String   @id @default(uuid())
   userId    String
   address   String
-  chain     Chain
+  chain     Chain?
   isVerified Boolean @default(false)
   user      User     @relation(fields: [userId], references: [id])
+
+  onchainActivities OnchainActivity[]
 
   @@unique([address, chain])
   @@index([userId])
@@ -45,7 +48,6 @@ model SocialAccount {
   userId     String
   platform   SocialPlatform
   username   String
-  isVerified Boolean  @default(false)
   user       User     @relation(fields: [userId], references: [id])
 
   @@unique([platform, username])
@@ -63,6 +65,67 @@ model Follow {
   @@unique([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
+}
+
+model Post {
+  id                String          @id @default(uuid())
+  userId            String
+  onchainActivityId String
+  content           String
+  mediaUrl          String?         // IPFS/Ceramic link
+  createdAt         DateTime        @default(now())
+
+  user              User            @relation(fields: [userId], references: [id])
+  onchainActivity   OnchainActivity @relation(fields: [onchainActivityId], references: [id])
+
+  comments          Comment[]
+  likes            Like[]
+
+  @@index([userId])
+  @@index([onchainActivityId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model OnchainActivity {
+  id        String   @id @default(uuid())
+  web3AccountId String
+  activityType String  // e.g., "NFT_MINT", "SWAP", "DEPOSIT"
+  txHash    String   @unique
+  chain     Chain?
+  metadata  Json?    
+  createdAt DateTime @default(now())
+
+  web3Account Web3Account @relation(fields: [web3AccountId], references: [id])
+  posts       Post[]
+  
+  @@index([web3AccountId])
 }
 
 enum Chain {

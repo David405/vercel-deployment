@@ -21,3 +21,8 @@ export interface Web3Account {
     createdAt: Date;
     updatedAt: Date;
   }
+
+  export enum Chain {
+    EVM = "EVM",
+    SOLANA = "SOLANA",
+  }
