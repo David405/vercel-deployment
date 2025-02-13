@@ -9,11 +9,30 @@ const asyncHandler =
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 
+interface TurnkeyCreateUserBody {
+  type: "turnkey";
+  username: string;
+  email: string;
+  bio?: string;
+  avatar?: string;
+  account: { address: string; nonce: string };
+}
+
+interface ThirdPartyCreateUserBody {
+  type: "third-party";
+  username: string;
+  bio?: string;
+  avatar?: string;
+  account: { address: string; nonce: string };
+}
+
+type CreateUserBody = TurnkeyCreateUserBody | ThirdPartyCreateUserBody;
+
 // * Create User Profile
 export const createUserProfile = asyncHandler(
   async (req: Request, res: Response) => {
     try {
-      const { username, email, bio, avatar, nonce, turnkeyWallet } = req.body;
+      const body = req.body as CreateUserBody;
 
       const existingUser = await prisma.user.findFirst({
         where: { OR: [{ email }, { username }] },
@@ -22,6 +41,30 @@ export const createUserProfile = asyncHandler(
       if (existingUser) {
         return res.status(400).json({ message: "User Already Exists" });
       }
+
+      // Validate Username
+      // - Check unique
+      // - Check characters
+      // - Check banned word list
+
+      if (body.type === "turnkey") {
+        // Validate Email
+        // - Check unique
+        // - Check format
+        // - Check domain
+      }
+
+      // Validate Address
+      // - Check format
+      // - Check uniqueness
+      // - Verify Nonce Signature
+
+      const data = {
+        username: body.username,
+        bio: body.bio,
+        avatar: body.avatar,
+        ...(body.type === "turnkey" && { email: body.email }),
+      };
 
       const newUser = await prisma.user.create({
         data: { username, email, bio, avatar, nonce, turnkeyWallet },
