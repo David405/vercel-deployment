@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
 
 export const errorHandler = (
   err: Error,
@@ -6,6 +6,10 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
+  console.error("Error:", err.message);
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+
+  res.status(500).json({
+    error: err.message || "Something went wrong!",
+  });
 };

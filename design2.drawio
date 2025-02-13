@@ -1,0 +1,86 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36" version="26.0.11">
+  <diagram name="User Flow and Database Schema" id="user-flow-db-schema">
+    <mxGraphModel dx="1306" dy="859" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- User Authentication Flow -->
+        <mxCell id="user" value="User" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="100" y="100" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="wallet-connect" value="WalletConnect/Turnkey" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+          <mxGeometry x="300" y="100" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="auth-check" value="Check Address in DB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
+          <mxGeometry x="300" y="200" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="login" value="Login User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+          <mxGeometry x="300" y="300" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="create-profile" value="Create Profile" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+          <mxGeometry x="500" y="200" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Connections -->
+        <mxCell id="connection1" value="" style="endArrow=classic;html=1;" parent="1" source="user" target="wallet-connect" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="connection2" value="" style="endArrow=classic;html=1;" parent="1" source="wallet-connect" target="auth-check" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="connection3" value="" style="endArrow=classic;html=1;" parent="1" source="auth-check" target="login" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="connection4" value="" style="endArrow=classic;html=1;" parent="1" source="auth-check" target="create-profile" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Database Schema -->
+        <mxCell id="db" value="PostgreSQL Database" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+          <mxGeometry x="300" y="400" width="160" height="100" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="users-table" value="Users Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="100" y="520" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="posts-table" value="Posts Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="300" y="520" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="comments-table" value="Comments Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="500" y="520" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="likes-table" value="Likes Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="700" y="520" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Connections between tables -->
+        <mxCell id="connection5" value="" style="endArrow=classic;html=1;" parent="1" source="db" target="users-table" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="connection6" value="" style="endArrow=classic;html=1;" parent="1" source="db" target="posts-table" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="connection7" value="" style="endArrow=classic;html=1;" parent="1" source="db" target="comments-table" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="connection8" value="" style="endArrow=classic;html=1;" parent="1" source="db" target="likes-table" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
