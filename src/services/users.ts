@@ -1,8 +1,16 @@
 import { NextFunction, Request, Response } from "express";
 import { UserProfile, Web3Account } from "../types";
 import { PrismaClient, Chain } from "@prisma/client";
+import { validateAddressWithAdamik, validateEmail, validateUsername } from "../utils/validators";
+import { userInfo } from "os";
 
 const prisma = new PrismaClient();
+
+export type account  = {
+  address : string;
+  nonce : string;
+  chainId : string;
+}
 
 const asyncHandler =
   (fn: any) => (req: Request, res: Response, next: NextFunction) => {
@@ -15,7 +23,7 @@ interface TurnkeyCreateUserBody {
   email: string;
   bio?: string;
   avatar?: string;
-  account: { address: string; nonce: string };
+  account: account;
 }
 
 interface ThirdPartyCreateUserBody {
@@ -23,57 +31,58 @@ interface ThirdPartyCreateUserBody {
   username: string;
   bio?: string;
   avatar?: string;
-  account: { address: string; nonce: string };
+  account: account;
 }
 
 type CreateUserBody = TurnkeyCreateUserBody | ThirdPartyCreateUserBody;
 
 // * Create User Profile
+ 
+
 export const createUserProfile = asyncHandler(
   async (req: Request, res: Response) => {
     try {
       const body = req.body as CreateUserBody;
-
-      const existingUser = await prisma.user.findFirst({
-        where: { OR: [{ email }, { username }] },
-      });
-
-      if (existingUser) {
-        return res.status(400).json({ message: "User Already Exists" });
+      const validUser = await validateUsername(body.username);
+      
+      if(!validUser.valid){
+        res.status(400).json({
+          message : validUser.message
+        });
+      } else {
+        console.log(validUser.message);
       }
-
-      // Validate Username
-      // - Check unique
-      // - Check characters
-      // - Check banned word list
 
       if (body.type === "turnkey") {
-        // Validate Email
-        // - Check unique
-        // - Check format
-        // - Check domain
+        
+        const validEmail = await validateEmail(body.email);
+        if(!validEmail.valid){
+          res.send(400).json({
+            message : validEmail.message
+          });
+        } else {
+          console.log(validEmail.message)
+        }
       }
 
-      // Validate Address
-      // - Check format
-      // - Check uniqueness
-      // - Verify Nonce Signature
+      const validAddress = await validateAddressWithAdamik(body.account);
+      if(!validAddress.valid){
+        res.send(400).json({
+          message : validAddress.message
+        });
+      } else {
+        console.log(validAddress.message);
+      }
 
-      const data = {
+      const userData = {
         username: body.username,
         bio: body.bio,
         avatar: body.avatar,
         ...(body.type === "turnkey" && { email: body.email }),
       };
 
-      const newUser = await prisma.user.create({
-        data: { username, email, bio, avatar, nonce, turnkeyWallet },
-      });
-
-      res.status(201).json({
-        message: "User added Successfully",
-        data: newUser,
-      });
+      // TODO : UPON VALIDATION ADD USER PROFILE TO THE DATABASE ( Waiting for Finalized Schema );
+     
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Internal Server Error" });
