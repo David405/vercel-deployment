@@ -23,6 +23,6 @@ export interface Web3Account {
   }
 
   export enum Chain {
-    EVM = "EVM",
+    EVM = "ethereum",
     SOLANA = "SOLANA",
   }

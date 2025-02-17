@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'node --loader ts-node/esm --experimental-specifier-resolution=node' src/app.ts"
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'node --loader ts-node/esm --experimental-specifier-resolution=node' src/app.ts",
+    "migrate": "npx prisma migrate dev"
   },
   "keywords": [],
   "author": {
