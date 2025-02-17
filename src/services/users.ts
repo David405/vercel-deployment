@@ -1,8 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import { UserProfile, Web3Account } from "../types";
-import { PrismaClient, Chain } from "@prisma/client";
+import { PrismaClient, Chain} from "@prisma/client";
 import { validateAddressWithAdamik, validateEmail, validateUsername } from "../utils/validators";
 import { userInfo } from "os";
+import { profile } from "console";
+
 
 const prisma = new PrismaClient();
 
@@ -37,6 +39,44 @@ interface ThirdPartyCreateUserBody {
 type CreateUserBody = TurnkeyCreateUserBody | ThirdPartyCreateUserBody;
 
 // * Create User Profile
+
+
+export const checkUsername = asyncHandler(
+  async (req:Request , res:Response) => {
+    try{
+      console.log(
+      "Calling Function"
+      )
+      const {username} = req.params;
+      const response = await validateUsername(username);
+      if( response.valid){
+        res.status(200).json(response);
+      }
+      else{
+        console.log("invalid res :",response)
+        res.status(400).json(response);
+      }
+      
+    } catch(err){
+      console.log(err);
+      res.status(500).json({
+        message:"Error validating username",
+        error : err,
+      })
+    }
+  }
+);
+
+/*
+User Profile Creation Flow : 
+                  1. Validates Username 
+                  2. If user connects using turnkey ---> Validates Email
+                  3. Validates Account Address using Adamik API            
+                  4. Adds the data to database
+
+ 
+
+*/
  
 
 export const createUserProfile = asyncHandler(
@@ -74,14 +114,41 @@ export const createUserProfile = asyncHandler(
         console.log(validAddress.message);
       }
 
+      
+
       const userData = {
         username: body.username,
-        bio: body.bio,
-        avatar: body.avatar,
-        ...(body.type === "turnkey" && { email: body.email }),
+        bio: body.bio || null,
+        avatar: body.avatar || null,
+        email: body.type === "turnkey" ? body.email : null,
+        turnkeyWallet : body.type === "turnkey" ? body.account.address : null,
+        nonce : body.account.nonce,
+
+
       };
 
+      const newUser  = await prisma.user.create({data:userData});
+      
+      const web3Wallet = {
+        userId : newUser.id,
+        address : body.account.address,
+        chain : body.account.chainId,
+        isVerified : false
+      }
+
+    const newWeb3Wallet = await prisma.web3Account.create({data:web3Wallet});
+
+    res.status(201).json({
+      message:"User profile added successfully",
+      data : {profile : newUser,
+        wallet : newWeb3Wallet
+      }
+    })
+
+
       // TODO : UPON VALIDATION ADD USER PROFILE TO THE DATABASE ( Waiting for Finalized Schema );
+
+
      
     } catch (err) {
       console.error(err);
@@ -94,9 +161,9 @@ export const createUserProfile = asyncHandler(
 export const getUserProfile = asyncHandler(
   async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
+      const { username } = req.params;
       const user = await prisma.user.findUnique({
-        where: { id },
+        where: { username },
         include: {
           web3Accounts: true,
           socialAccounts: true,
@@ -138,3 +205,5 @@ export const getUserProfile = asyncHandler(
     }
   }
 );
+
+

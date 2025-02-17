@@ -33,7 +33,7 @@ export const validateUsername = async (username :string):Promise<{ valid: boolea
         return { valid: false, message: "Username already taken" };
     }
 
-    return { valid: true, message: "Username is valid" };
+    return { valid: true, message: "Username is available" };
     
 }
 
@@ -54,14 +54,18 @@ export const validateEmail = async(email:string):Promise<{valid:boolean , messag
 // Validates Account Address with Adamik API
 
 export const validateAddressWithAdamik= async({address , nonce ,chainId}:account):Promise<{valid:boolean , message:string}> => {
-
+    console.log({
+        address : address ,
+        chainId : chainId ,
+    })
     const apiKey = process.env.ADAMIK_API_KEY;
+    
 
     try{
         const response = await axios.post(`https://api.adamik.io/api/${chainId}/address/validate`,
             {address},
             {headers:{
-                Authorization : `Bearer ${apiKey}`,
+                Authorization : `10d2cf70-ff86-4bc3-9e35-c64957a9552d`,
                 "Content-Type":'application/json'
             }}
         );

@@ -33,7 +33,7 @@ model Web3Account {
   id        String   @id @default(uuid())
   userId    String
   address   String
-  chain     Chain?
+  chain     String
   isVerified Boolean @default(false)
   user      User     @relation(fields: [userId], references: [id])
 
