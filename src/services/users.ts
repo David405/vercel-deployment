@@ -136,11 +136,6 @@ export const createUserProfile = asyncHandler(
         wallet : newWeb3Wallet
       }
     })
-
-
-      // TODO : UPON VALIDATION ADD USER PROFILE TO THE DATABASE ( Waiting for Finalized Schema );
-
-
      
     } catch (err) {
       console.error(err);

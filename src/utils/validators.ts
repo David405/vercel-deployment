@@ -65,7 +65,7 @@ export const validateAddressWithAdamik= async({address , nonce ,chainId}:account
         const response = await axios.post(`https://api.adamik.io/api/${chainId}/address/validate`,
             {address},
             {headers:{
-                Authorization : `10d2cf70-ff86-4bc3-9e35-c64957a9552d`,
+                Authorization : apiKey,
                 "Content-Type":'application/json'
             }}
         );
