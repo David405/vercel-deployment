@@ -41,6 +41,13 @@ DATABASE_URL=''
 PORT=''
 ```
 
+Sample 
+```
+NODE_ENV='dev'
+DATABASE_URL="postgresql://username:password@localhost:5432/bloom_server_db?schema=public"
+PORT='3004'
+ ```
+
 ## Setting Up PostgreSQL Database and Running Prisma
 
 ### 1. Install PostgreSQL
@@ -62,7 +69,7 @@ After installing PostgreSQL, you can create a new database. You can do this usin
 
 3. Create a new database:
    ```sql
-   CREATE DATABASE your_database_name;
+   CREATE DATABASE bloom_server_db;
    ```
 
 4. Exit the PostgreSQL prompt:
@@ -78,6 +85,11 @@ If you haven't installed Prisma CLI yet, you can do so by running the following 
 yarn install --save-dev prisma
 ```
 
+### 4. Migrate Prisma
+
+```sh
+npx prisma migrate dev --name <migration_name>
+```
 
 ### 5. Install Dependencies
 

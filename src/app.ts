@@ -11,6 +11,7 @@ dotenv.config();
 
 const prisma = new PrismaClient();
 const app = express();
+const port = process.env.PORT || 3002;
 
 // CORS configuration
 const corsOptionsDelegate = (req: any, callback: any) => {
@@ -20,9 +21,9 @@ const corsOptionsDelegate = (req: any, callback: any) => {
   let allowedOrigin;
 
   if (appEnv === "development") {
-    allowedOrigin = "http://localhost:3004";
+    allowedOrigin = `http://localhost:${port}`;
   } else if (appEnv === "staging") {
-    allowedOrigin = ["http://localhost:3004", "https://staging.bloom.social"];
+    allowedOrigin = [`http://localhost:${port}`, "https://staging.bloom.social"];
   } else if (appEnv === "production") {
     allowedOrigin = "https://bloom.social";
   }
@@ -82,7 +83,6 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 // Start server
-const port = process.env.PORT || 3002;
 app.listen(port, () => {
   console.log(`Bloom server is running on port ${port}`);
 });
