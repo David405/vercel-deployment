@@ -33,7 +33,7 @@ model Web3Account {
   id        String   @id @default(uuid())
   userId    String
   address   String
-  chain     String
+  chain     Chain
   isVerified Boolean @default(false)
   user      User     @relation(fields: [userId], references: [id])
 
@@ -129,12 +129,12 @@ model OnchainActivity {
 }
 
 enum Chain {
-  EVM
-  SOLANA
+  ethereum
+  solana
 }
 
 enum SocialPlatform {
-  TWITTER
-  GITHUB
-  DISCORD
+  twitter
+  github
+  discord
 }

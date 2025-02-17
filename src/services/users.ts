@@ -1,10 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { UserProfile, Web3Account } from "../types";
-import { PrismaClient, Chain} from "@prisma/client";
+import { UserProfile, Web3Account, SocialAccount } from "../types";
+import { PrismaClient, Chain } from "@prisma/client";
 import { validateAddressWithAdamik, validateEmail, validateUsername } from "../utils/validators";
-import { userInfo } from "os";
-import { profile } from "console";
-
 
 const prisma = new PrismaClient();
 
@@ -66,17 +63,6 @@ export const checkUsername = asyncHandler(
     }
   }
 );
-
-/*
-User Profile Creation Flow : 
-                  1. Validates Username 
-                  2. If user connects using turnkey ---> Validates Email
-                  3. Validates Account Address using Adamik API            
-                  4. Adds the data to database
-
- 
-
-*/
  
 
 export const createUserProfile = asyncHandler(
@@ -128,11 +114,17 @@ export const createUserProfile = asyncHandler(
       };
 
       const newUser  = await prisma.user.create({data:userData});
+
+      if (body.account.chainId !== 'ethereum' && body.account.chainId !== 'solana') {
+        return res.status(400).json({ error: "Invalid chain parameter" });
+      }
+
+      const chain: Chain = body.account.chainId as unknown as Chain; 
       
       const web3Wallet = {
         userId : newUser.id,
         address : body.account.address,
-        chain : body.account.chainId,
+        chain : chain,
         isVerified : false
       }
 
@@ -182,12 +174,12 @@ export const getUserProfile = asyncHandler(
         bio: user.bio || undefined,
         avatar: user.avatar || undefined,
         email: user.email || undefined,
-        web3Accounts: user.web3Accounts.map((acc) => ({
+        web3Accounts: user.web3Accounts.map((acc: Web3Account) => ({
           address: acc.address,
-          chain: acc.chain as Chain | null, // Ensuring TypeScript compatibility
+          chain: acc.chain, // Ensuring TypeScript compatibility
           isVerified: acc.isVerified,
         })) as Web3Account[], // Explicitly casting to Web3Account[]
-        socialAccounts: user.socialAccounts.map((acc) => ({
+        socialAccounts: user.socialAccounts.map((acc: SocialAccount) => ({
           platform: acc.platform,
           username: acc.username,
         })), // Removed `isVerified`

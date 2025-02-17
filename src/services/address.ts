@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response, NextFunction } from "express";
-import { Chain } from "../types";
 
 const prisma = new PrismaClient();
 
@@ -12,20 +11,20 @@ const asyncHandler =
 
   export const checkAccountAddress = asyncHandler(
     async (req: Request, res: Response) => {
-      const { address, chain } = req.query;
+      const { address, chainId } = req.query;
   
       if (!address || typeof address !== "string") {
         return res.status(400).json({ error: "Invalid account address" });
       }
   
-      if (!chain || typeof chain !== "string") {
+      if (!chainId || typeof chainId !== "string") {
         return res.status(400).json({ error: "Missing or invalid chain parameter" });
       }
-  
-      const chainEnum = chain as Chain;
-  
+
+      const chain: 'ethereum' | 'solana' = chainId as 'ethereum' | 'solana';
+
       const account = await prisma.web3Account.findUnique({
-        where: { address_chain: { address, chain: chainEnum } }, 
+        where: { address_chain: { address, chain } }, 
         include: { user: true },
       });
   

@@ -1,16 +1,14 @@
 export interface Web3Account {
     address: string;
-    chain: 'EVM' | 'SOLANA'  ;
+    chain: 'ethereum' | 'solana';
     isVerified: boolean;
   }
   
   export interface SocialAccount {
-    platform: 'TWITTER' | 'GITHUB' | 'DISCORD';
+    platform: 'twitter' | 'github' | 'discord';
     username: string;
     
   }
-
-  
   
   export interface UserProfile {
     id: string;
@@ -22,9 +20,4 @@ export interface Web3Account {
     socialAccounts: SocialAccount[];
     createdAt: Date;
     updatedAt: Date;
-  }
-
-  export enum Chain {
-    EVM = "ethereum",
-    SOLANA = "SOLANA",
   }
