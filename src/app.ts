@@ -46,10 +46,9 @@ app.use(cookieParser());
 // CSRF protection
 const csrfProtection = csrf({ cookie: true });
 
-// Apply CSRF protection to all routes except those starting with /api
 app.use((req, res, next) => {
   if (req.path.startsWith("/api")) {
-    return next();
+    return csrfProtection(req, res, next);
   }
   return csrfProtection(req, res, next);
 });
