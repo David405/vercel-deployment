@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { UserProfile, Web3Account, SocialAccount } from "../types";
 import { PrismaClient, Chain } from "@prisma/client";
 import { validateAddressWithAdamik, validateEmail, validateUsername } from "../utils/validators";
+import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
 
@@ -193,4 +194,47 @@ export const getUserProfile = asyncHandler(
   }
 );
 
+export const loginWithAddress = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { address, chain } = req.body;
 
+    if (!address || typeof address !== "string") {
+      return res.status(400).json({ error: "Invalid account address" });
+    }
+
+    const account = await prisma.web3Account.findUnique({
+      where: { address_chain: { address, chain } },
+      include: { user: true }, 
+    });
+
+    if (!account) {
+      return res.status(401).json({ error: "Account not found" });
+    }
+
+    const token = jwt.sign({ userId: account.userId }, process.env.JWT_SECRET!, {
+      expiresIn: "1h",
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === "production", 
+      maxAge: 3600000,
+      sameSite: "strict",
+    });
+
+    const userDetails = account.user;
+
+    res.status(200).json({
+      message: "Login successful",
+      user: {
+        id: userDetails.id,
+        username: userDetails.username,
+        email: userDetails.email,
+        bio: userDetails.bio,
+        avatar: userDetails.avatar,
+        address: account.address,
+        isVerified: account.isVerified,
+      },
+    });
+  }
+);
