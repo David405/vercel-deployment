@@ -123,8 +123,8 @@ export const unfollowUser = asyncHandler(
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Delete the follow relationship if it exists
-      const deletedFollow = await prisma.follow.delete({
+      // Check if the current user is following the user to unfollow
+      const existingFollow = await prisma.follow.findUnique({
         where: {
           followerId_followingId: {
             followerId: currentUserId,
@@ -133,10 +133,20 @@ export const unfollowUser = asyncHandler(
         },
       });
 
-      // If no follow relationship was found, return a not found error
-      if (!deletedFollow) {
-        return res.status(404).json({ message: "Follow relationship not found" });
+      // If no follow relationship exists, return a message indicating the user is not followed
+      if (!existingFollow) {
+        return res.status(400).json({ message: "You do not follow this user" });
       }
+
+      // Delete the follow relationship
+      await prisma.follow.delete({
+        where: {
+          followerId_followingId: {
+            followerId: currentUserId,
+            followingId: userToUnfollow.id,
+          },
+        },
+      });
 
       // Respond with a success message
       res.status(200).json({ message: "Successfully unfollowed the user" });
