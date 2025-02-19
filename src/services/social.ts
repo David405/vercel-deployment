@@ -100,3 +100,54 @@ export const isFollowingUser = asyncHandler(
   }
 );
 
+export const unfollowUser = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      // Extract the username from the request parameters
+      const { username } = req.params;
+      // Get the current user's ID from the request object
+      const currentUserId = req.user?.userId;
+
+      // If the user is not authenticated, return an unauthorized error
+      if (!currentUserId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Find the user to unfollow by their username
+      const userToUnfollow = await prisma.user.findUnique({
+        where: { username },
+      });
+
+      // If the user to unfollow does not exist, return a not found error
+      if (!userToUnfollow) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Delete the follow relationship if it exists
+      const deletedFollow = await prisma.follow.delete({
+        where: {
+          followerId_followingId: {
+            followerId: currentUserId,
+            followingId: userToUnfollow.id,
+          },
+        },
+      });
+
+      // If no follow relationship was found, return a not found error
+      if (!deletedFollow) {
+        return res.status(404).json({ message: "Follow relationship not found" });
+      }
+
+      // Respond with a success message
+      res.status(200).json({ message: "Successfully unfollowed the user" });
+    } catch (error) {
+      // Log any errors and respond with a server error message
+      console.log(error);
+      res.status(500).json({
+        message: "Error unfollowing user",
+        error: error,
+      });
+    }
+  }
+);
+
