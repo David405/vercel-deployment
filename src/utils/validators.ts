@@ -87,3 +87,24 @@ export const validateAddressWithAdamik= async({address , nonce ,chainId}:account
         }
     }
 }
+
+export async function checkIfFollowingAndGetUser(currentUserId: string, username: string) {
+    const userToCheck = await prisma.user.findUnique({
+      where: { username },
+    });
+  
+    if (!userToCheck) {
+      throw new Error("User not found");
+    }
+  
+    const existingFollow = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId: currentUserId,
+          followingId: userToCheck.id,
+        },
+      },
+    });
+  
+    return { isFollowing: !!existingFollow, userToCheck };
+  }

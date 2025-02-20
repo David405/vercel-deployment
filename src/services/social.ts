@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import { checkIfFollowingAndGetUser } from "../utils/validators";
 
 const prisma = new PrismaClient();
 
@@ -103,59 +104,40 @@ export const isFollowingUser = asyncHandler(
 export const unfollowUser = asyncHandler(
   async (req: Request, res: Response) => {
     try {
-      // Extract the username from the request parameters
       const { username } = req.params;
-      // Get the current user's ID from the request object
       const currentUserId = req.user?.userId;
 
-      // If the user is not authenticated, return an unauthorized error
       if (!currentUserId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      // Find the user to unfollow by their username
-      const userToUnfollow = await prisma.user.findUnique({
-        where: { username },
-      });
+      // Use the helper function to check if the user is following and get user info
+      const { isFollowing, userToCheck } = await checkIfFollowingAndGetUser(currentUserId, username);
 
-      // If the user to unfollow does not exist, return a not found error
-      if (!userToUnfollow) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Check if the current user is following the user to unfollow
-      const existingFollow = await prisma.follow.findUnique({
-        where: {
-          followerId_followingId: {
-            followerId: currentUserId,
-            followingId: userToUnfollow.id,
-          },
-        },
-      });
-
-      // If no follow relationship exists, return a message indicating the user is not followed
-      if (!existingFollow) {
+      if (!isFollowing) {
         return res.status(400).json({ message: "You do not follow this user" });
       }
 
-      // Delete the follow relationship
+      // Delete the follow relationship using the retrieved user info
       await prisma.follow.delete({
         where: {
           followerId_followingId: {
             followerId: currentUserId,
-            followingId: userToUnfollow.id,
+            followingId: userToCheck.id,
           },
         },
       });
 
-      // Respond with a success message
       res.status(200).json({ message: "Successfully unfollowed the user" });
     } catch (error) {
-      // Log any errors and respond with a server error message
-      console.log(error);
+      const err = error as Error; // Type assertion to Error
+      if (err.message === "User not found") {
+        return res.status(404).json({ message: "User not found" });
+      }
+      console.log(err);
       res.status(500).json({
         message: "Error unfollowing user",
-        error: error,
+        error: err,
       });
     }
   }
