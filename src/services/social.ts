@@ -143,3 +143,67 @@ export const unfollowUser = asyncHandler(
   }
 );
 
+export const getFollowers = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const { username } = req.params;
+
+      const user = await prisma.user.findUnique({
+        where: { username },
+      });
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const followers = await prisma.follow.findMany({
+        where: { followingId: user.id },
+        include: {
+          following: true,
+        },
+      });
+
+      const followerUsers = followers.map(follow => follow.following);
+      res.status(200).json({ followers: followerUsers });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({
+        message: "Error retrieving followers",
+        error: error,
+      });
+    }
+  }
+);
+
+export const getFollowing = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const { username } = req.params;
+
+      const user = await prisma.user.findUnique({
+        where: { username },
+      });
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const following = await prisma.follow.findMany({
+        where: { followerId: user.id },
+        include: {
+          follower: true,
+        },
+      });
+
+      const followingUsers = following.map(follow => follow.follower);
+      res.status(200).json({ following: followingUsers });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({
+        message: "Error retrieving following",
+        error: error,
+      });
+    }
+  }
+);
+
