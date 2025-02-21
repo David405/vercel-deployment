@@ -1,13 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
-import { checkIfFollowingAndGetUser } from "../utils/validators";
-
-const prisma = new PrismaClient();
-
-const asyncHandler =
-  (fn: any) => (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+import { asyncHandler } from "../utils/asyncHandler";
+import { prisma } from "../utils/prismaUtils";
+import { getUserAndCheckFollowingStatus } from "../utils/validators";
 
 export const followUser = asyncHandler(
   async (req: Request, res: Response) => {
@@ -112,7 +106,7 @@ export const unfollowUser = asyncHandler(
       }
 
       // Use the helper function to check if the user is following and get user info
-      const { isFollowing, userToCheck } = await checkIfFollowingAndGetUser(currentUserId, username);
+      const { isFollowing, userToCheck } = await getUserAndCheckFollowingStatus(currentUserId, username);
 
       if (!isFollowing) {
         return res.status(400).json({ message: "You do not follow this user" });
@@ -158,8 +152,12 @@ export const getFollowers = asyncHandler(
 
       const followers = await prisma.follow.findMany({
         where: { followingId: user.id },
-        include: {
-          following: true,
+        select: {
+          following: {
+            select : {username : true, id : true , avatar:true ,email:true,bio:true,
+
+             }
+          },
         },
       });
 
@@ -190,8 +188,10 @@ export const getFollowing = asyncHandler(
 
       const following = await prisma.follow.findMany({
         where: { followerId: user.id },
-        include: {
-          follower: true,
+        select: {
+          follower: {
+            select: { username: true, id: true, avatar: true, email: true , bio:true },
+          },
         },
       });
 

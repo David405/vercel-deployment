@@ -1,6 +1,7 @@
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient, User } from "@prisma/client"
 import axios from "axios";
 import { account } from "../services/users";
+import { UserProfile } from "../types";
 
 
 const prisma = new PrismaClient();
@@ -88,9 +89,10 @@ export const validateAddressWithAdamik= async({address , nonce ,chainId}:account
     }
 }
 
-export async function checkIfFollowingAndGetUser(currentUserId: string, username: string) {
+export async function getUserAndCheckFollowingStatus(currentUserId: string, usernameToCheck: string)
+: Promise<{isFollowing:boolean , userToCheck:User}> {
     const userToCheck = await prisma.user.findUnique({
-      where: { username },
+      where: { username: usernameToCheck },
     });
   
     if (!userToCheck) {
