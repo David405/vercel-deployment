@@ -63,6 +63,16 @@
         <mxCell id="likes-table" value="Likes Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
           <mxGeometry x="700" y="520" width="160" height="60" as="geometry" />
         </mxCell>
+
+        <!-- Dislikes Table -->
+        <mxCell id="dislikes-table" value="Dislikes Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="900" y="520" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Replies Table -->
+        <mxCell id="replies-table" value="Replies Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="1100" y="520" width="160" height="60" as="geometry" />
+        </mxCell>
         
         <!-- Connections between tables -->
         <mxCell id="connection5" value="" style="endArrow=classic;html=1;" parent="1" source="db" target="users-table" edge="1">
@@ -78,6 +88,15 @@
         </mxCell>
         
         <mxCell id="connection8" value="" style="endArrow=classic;html=1;" parent="1" source="db" target="likes-table" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Connections for new tables -->
+        <mxCell id="connection9" value="" style="endArrow=classic;html=1;" parent="1" source="db" target="dislikes-table" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="connection10" value="" style="endArrow=classic;html=1;" parent="1" source="db" target="replies-table" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry" />
         </mxCell>
       </root>

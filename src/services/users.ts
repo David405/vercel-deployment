@@ -211,7 +211,7 @@ export const loginWithAddress = asyncHandler(
       return res.status(401).json({ error: "Account not found" });
     }
 
-    const token = jwt.sign({ userId: account.userId }, process.env.JWT_SECRET!, {
+    const token = jwt.sign({ userId: account.userId }, process.env.SECRET!, {
       expiresIn: "1h",
     });
 
