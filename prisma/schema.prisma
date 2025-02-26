@@ -26,7 +26,9 @@ model User {
   following       Follow[]  @relation("UserFollowing")
   posts           Post[]
   comments        Comment[]
-  likes           Like[]
+  likes           Like[]          // Added relation to Like model
+  replies         Reply[]         // Added relation to Reply model
+
 }
 
 model Web3Account {
@@ -74,12 +76,15 @@ model Post {
   content           String
   mediaUrl          String?         // IPFS/Ceramic link
   createdAt         DateTime        @default(now())
+  
+  views             Int             @default(0) // Engagement tracker
+  dislikes          Dislike[]       // Reference to Dislike model
 
   user              User            @relation(fields: [userId], references: [id])
   onchainActivity   OnchainActivity @relation(fields: [onchainActivityId], references: [id])
 
   comments          Comment[]
-  likes            Like[]
+  likes             Like[]
 
   @@index([userId])
   @@index([onchainActivityId])
@@ -92,8 +97,14 @@ model Comment {
   content   String
   createdAt DateTime @default(now())
 
+  views     Int      @default(0) // Engagement
+  likes     Like[]   // Reference to Like model
+  dislikes  Dislike[] // Reference to Dislike model
+
   post      Post     @relation(fields: [postId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+
+  replies   Reply[]  // Reference to Reply model
 
   @@index([postId])
   @@index([userId])
@@ -101,15 +112,59 @@ model Comment {
 
 model Like {
   id        String   @id @default(uuid())
-  postId    String
+  postId    String?
+  commentId String?
+  replyId   String?
   userId    String
   createdAt DateTime @default(now())
 
-  post      Post     @relation(fields: [postId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
-
+  post      Post?    @relation(fields: [postId], references: [id])
+  comment   Comment? @relation(fields: [commentId], references: [id])
+  reply     Reply?   @relation(fields: [replyId], references: [id]) 
+  user      User     @relation(fields: [userId], references: [id]) // Added relation to User
+  
   @@unique([postId, userId])
+  @@unique([commentId, userId]) // Ensure uniqueness for likes on comments
+  @@unique([replyId, userId])    // Ensure uniqueness for likes on replies
   @@index([postId])
+  @@index([commentId])
+  @@index([replyId])              // Index for replyId
+}
+
+model Dislike {
+  id        String   @id @default(uuid())
+  postId    String?
+  commentId String?
+  replyId   String?  // Added to reference Reply
+  userId    String
+  createdAt DateTime @default(now())
+
+  post      Post?    @relation(fields: [postId], references: [id])
+  comment   Comment? @relation(fields: [commentId], references: [id])
+  reply     Reply?   @relation(fields: [replyId], references: [id]) // Added relation to Reply
+  
+  @@unique([postId, userId])
+  @@unique([commentId, userId]) // Ensure uniqueness for likes on comments
+  @@unique([replyId, userId])    // Ensure uniqueness for dislikes on replies
+  @@index([postId])
+  @@index([commentId])
+  @@index([replyId])              // Index for replyId
+}
+
+model Reply {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  likes     Like[]   // Reference to Like model
+  dislikes  Dislike[] // Reference to Dislike model
+
+  comment   Comment   @relation(fields: [commentId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([commentId])
   @@index([userId])
 }
 
