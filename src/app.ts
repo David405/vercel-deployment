@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import session from 'express-session';
 import { PrismaClient } from "@prisma/client";
 import csrf from "csurf";
 import cookieParser from "cookie-parser";
@@ -42,6 +43,18 @@ app.options("*", cors(corsOptionsDelegate)); // Enable pre-flight requests
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
+
+if (!process.env.SECRET) {
+    throw new Error('SECRET environment variable is not defined');
+}
+
+app.use(session({
+    name: 'bloom-web-server',
+    secret: process.env.SECRET,
+    resave: true,
+    saveUninitialized: true,
+    cookie: { secure: false, sameSite: true }
+  }));
 
 // CSRF protection
 const csrfProtection = csrf({ cookie: true });
