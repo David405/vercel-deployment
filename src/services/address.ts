@@ -82,11 +82,9 @@ const asyncHandler =
         sameSite: "strict",
       })
 
-      req.session.siwe = { address, chainId };
       req.session.save(() => res.status(200).json({ address, chainId}));
     } catch (e) {
-      // Clean the session
-      req.session.siwe = undefined;
+      
       req.session.save(() => res.status(500).json({ message: (e as Error).message }));
     }
     }
