@@ -1,6 +1,7 @@
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient, User } from "@prisma/client"
 import axios from "axios";
 import { account } from "../services/users";
+import { UserProfile } from "../types";
 
 
 const prisma = new PrismaClient();
@@ -87,3 +88,25 @@ export const validateAddressWithAdamik= async({address , nonce ,chainId}:account
         }
     }
 }
+
+export async function getUserAndCheckFollowingStatus(currentUserId: string, usernameToCheck: string)
+: Promise<{isFollowing:boolean , userToCheck:User}> {
+    const userToCheck = await prisma.user.findUnique({
+      where: { username: usernameToCheck },
+    });
+  
+    if (!userToCheck) {
+      throw new Error("User not found");
+    }
+  
+    const existingFollow = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId: currentUserId,
+          followingId: userToCheck.id,
+        },
+      },
+    });
+  
+    return { isFollowing: !!existingFollow, userToCheck };
+  }
