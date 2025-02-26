@@ -1,10 +1,11 @@
-import { NextFunction, Request, Response } from "express";
+import {  Request, Response } from "express";
 import { UserProfile, Web3Account, SocialAccount } from "../types";
-import { PrismaClient, Chain } from "@prisma/client";
+import {  Chain } from "@prisma/client";
 import { validateAddressWithAdamik, validateEmail, validateUsername } from "../utils/validators";
 import jwt from "jsonwebtoken";
+import { asyncHandler } from "../utils/asyncHandler";
+import { prisma } from "../utils/prismaUtils";
 
-const prisma = new PrismaClient();
 
 export type account  = {
   address : string;
@@ -12,10 +13,7 @@ export type account  = {
   chainId : string;
 }
 
-const asyncHandler =
-  (fn: any) => (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+
 
 interface TurnkeyCreateUserBody {
   type: "turnkey";
@@ -170,9 +168,9 @@ export const getUserProfile = asyncHandler(
         bio: user.bio || undefined,
         avatar: user.avatar || undefined,
         email: user.email || undefined,
-        web3Accounts: user.web3Accounts.map((acc: Web3Account) => ({
+        web3Accounts: user.web3Accounts.map((acc) => ({
           address: acc.address,
-          chain: acc.chain, // Ensuring TypeScript compatibility
+          chain: acc.chain as "ethereum" | "solana" , // Ensuring TypeScript compatibility
           isVerified: acc.isVerified,
         })) as Web3Account[], // Explicitly casting to Web3Account[]
         socialAccounts: user.socialAccounts.map((acc: SocialAccount) => ({
