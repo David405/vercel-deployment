@@ -3,6 +3,6 @@ import { checkAccountAddress } from "../services/address";
 
 const router = express.Router();
 
-router.get("/users/check-address", checkAccountAddress);
+router.get("/address/check-address", checkAccountAddress);
 
 export default router;
