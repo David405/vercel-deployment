@@ -98,6 +98,7 @@ process.on("unhandledRejection", (reason, promise) => {
 // Start server
 app.listen(port, () => {
   console.log(`Bloom server is running on port ${port}`);
+  console.log(`Heap Used: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`);
 });
 
 export { app, prisma };
