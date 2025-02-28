@@ -4,8 +4,8 @@ import { authenticateUser } from "../middleware/auth";
 
 const router = Router();
 
-router.post("/feed/users/post", authenticateUser, createPost);
-router.get("/feed/users/posts/:username", authenticateUser, getPostsByUsername);
+router.post("/feed/posts/create", authenticateUser, createPost);
+router.get("/feed/posts/:username", authenticateUser, getPostsByUsername);
 router.get("/feed/posts/:postId", authenticateUser, getPostById);
 
 export default router;
