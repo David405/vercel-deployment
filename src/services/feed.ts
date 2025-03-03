@@ -2,7 +2,8 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { prisma } from "../utils/prismaUtils";
 import { OnchainActivity, Prisma, Chain } from "@prisma/client";
-import { ActivityType } from "../types";
+import { ActivityMetadata, ActivityType } from "../types";
+import { validateOnChainActivity } from "../utils/validators";
 
 
 //* POST CREATION FLOW 
@@ -13,41 +14,46 @@ import { ActivityType } from "../types";
 //* 5. Return the post
 
 
-interface PostCreateBody {
+interface PostCreateBody<T extends ActivityType> {
     content: string;
-    onChainActivity: OnChainActivityData;
+    onChainActivity: {
+        activityType: T;
+        txHash: string;
+        chain: "ethereum" | "solana";
+        metadata: ActivityMetadata<T>;
+    };
     mediaUrl?: string;
 }
 
-interface OnChainActivityData {
-    activityType: ActivityType;
-    txHash: string;
-    chain: "ethereum" | "solana";
-    metadata?: Record<string, any>;
-}
+
 
 
 
 export const createPost = asyncHandler(async (req: Request, res: Response) => {
     try {
-        
-        const body = req.body as PostCreateBody;
-        
-        const currentUser = req.user?.userId;
-        
-        if (!currentUser) {
-            return res.status(401).json({ message: "Unauthorized" });
+        const body = req.body;
+        const currentUserId = req.user?.userId;
+
+        if (!currentUserId) {
+            return res.status(401).json({ message: "Unauthorized: User not logged in" });
         }
 
-        // Validate the presence of onChainActivity and its properties
-        if (!body.onChainActivity || !body.onChainActivity.activityType || !body.onChainActivity.txHash || !body.onChainActivity.chain) {
-            return res.status(400).json({ message: "Invalid onChainActivity data" });
+        // Validate the request body
+        if (!body.content || !body.onChainActivity) {
+            return res.status(400).json({ message: "Invalid request: Missing required fields" });
         }
 
-        // First, verify the user has a web3 account
+        // Validate onChainActivity
+        if (!validateOnChainActivity(body.onChainActivity)) {
+            return res.status(400).json({ 
+                message: "Invalid onChainActivity data: Structure does not match expected format" 
+            });
+        }
+
+        // Find the user's web3 account
         const web3Account = await prisma.web3Account.findFirst({
             where: {
-                userId: currentUser
+                userId: currentUserId
             }
         });
 
@@ -57,20 +63,22 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
             });
         }
 
+        // Create on-chain activity record
         const activityData = await prisma.onchainActivity.create({
             data: {
                 web3AccountId: web3Account.id,
                 activityType: body.onChainActivity.activityType,
                 txHash: body.onChainActivity.txHash,
                 chain: body.onChainActivity.chain as Chain,
-                metadata: body.onChainActivity.metadata as Prisma.InputJsonValue,
+                metadata: body.onChainActivity.metadata,
             }
         });
 
+        // Create post record
         const post = await prisma.post.create({
             data: {
                 content: body.content,
-                userId: currentUser,
+                userId: currentUserId,
                 onchainActivityId: activityData.id,
                 mediaUrl: body.mediaUrl,
             }
@@ -81,9 +89,9 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
             post,
         });
     } catch (error) {
-        console.log(error);
+        console.error("Error creating post:", error);
         return res.status(500).json({
-            message: "Internal server error",
+            message: "Internal server error: Unable to create post",
         });
     }
 });
@@ -95,7 +103,13 @@ export const getPostsByUsername = asyncHandler(async (req: Request, res: Respons
     try {
         const user = await prisma.user.findUnique({
             where: { username },
-            include: { posts: true },
+            include: {
+                posts: {
+                    include: {
+                        onchainActivity: true,
+                    },
+                },
+            },
         });
 
         if (!user) {
@@ -104,7 +118,7 @@ export const getPostsByUsername = asyncHandler(async (req: Request, res: Respons
 
         return res.status(200).json({ posts: user.posts });
     } catch (error) {
-        console.log(error);
+        console.error("Error fetching posts by username:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 });
@@ -116,7 +130,12 @@ export const getPostById = asyncHandler(async (req: Request, res: Response) => {
     try {
         const post = await prisma.post.findUnique({
             where: { id: postId },
-            include: { user: true, comments: true, likes: true },
+            include: {
+                user: true,
+                comments: true,
+                likes: true,
+                onchainActivity: true,
+            },
         });
 
         if (!post) {
@@ -125,7 +144,7 @@ export const getPostById = asyncHandler(async (req: Request, res: Response) => {
 
         return res.status(200).json({ post });
     } catch (error) {
-        console.log(error);
+        console.error("Error fetching post by ID:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 });

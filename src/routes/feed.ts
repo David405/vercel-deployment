@@ -6,6 +6,6 @@ const router = Router();
 
 router.post("/feed/posts/create", authenticateUser, createPost);
 router.get("/feed/posts/:username", authenticateUser, getPostsByUsername);
-router.get("/feed/posts/:postId", authenticateUser, getPostById);
+router.get("/feed/post/:postId", authenticateUser, getPostById);
 
 export default router;

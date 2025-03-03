@@ -28,25 +28,61 @@ export enum ActivityType {
     Deposit = 'deposit',
 }
 
-export interface OnChainActivity {
+// Metadata for a Mint activity
+export interface MintMetadata {
+    contractAddress: string;
+    tokenId: string;
+    collection: string;
+    fiatValue?: string;
+    mediaUrl?:string 
+}
+
+// Metadata for a Swap activity
+export interface SwapMetadata {
+    fromToken: string;
+    toToken: string;
+    amountIn: string;
+    amountOut: string;
+    exchange: string;
+    marketCap?: string;
+    fiatValue?: string; 
+    pnl?: string; 
+}
+
+// Metadata for a Deposit activity
+export interface DepositMetadata {
+    amount: string;
+    walletAddress: string;
+    source: string;
+    fiatValue?: string; 
+    marketCap?: string;// Optional fiat value of the deposit
+}
+
+export type ActivityMetadata <T extends ActivityType> = 
+    T extends ActivityType.Mint ? MintMetadata :
+    T extends ActivityType.Swap ? SwapMetadata :
+    T extends ActivityType.Deposit ? DepositMetadata :
+    never;
+
+export interface OnChainActivity<T extends ActivityType> {
     id: string;
-    type: ActivityType;
+    type: T;
     amount: number;
     timestamp: Date;
     txHash: string;
     chain: 'ethereum' | 'solana';
-    metadata: Record<string, any>;
+    metadata: ActivityMetadata<T>;
     createdAt: Date;
     web3AccountId: string;
 }
 
-export interface Post {
+export interface Post<T extends ActivityType> {
     id: string;
     content: string;
     createdAt: Date;
     updatedAt: Date;
     userId: string;
-    onChainActivity: OnChainActivity[];
+    onChainActivity: OnChainActivity<T>[];
     comments: Comment[];
     likes: Like[];
     dislikes: Dislike[];
