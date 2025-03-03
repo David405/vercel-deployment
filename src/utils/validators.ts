@@ -114,7 +114,7 @@ export async function getUserAndCheckFollowingStatus(currentUserId: string, user
 
 
   // Type guard functions to validate metadata
-export function isMintMetadata(metadata: any): metadata is MintMetadata {
+ function isMintMetadata(metadata: any): metadata is MintMetadata {
     return (
         typeof metadata === 'object' &&
         metadata !== null &&
@@ -126,7 +126,7 @@ export function isMintMetadata(metadata: any): metadata is MintMetadata {
     );
 }
 
-export function isSwapMetadata(metadata: any): metadata is SwapMetadata {
+ function isSwapMetadata(metadata: any): metadata is SwapMetadata {
     return (
         typeof metadata === 'object' &&
         metadata !== null &&
@@ -141,7 +141,7 @@ export function isSwapMetadata(metadata: any): metadata is SwapMetadata {
     );
 }
 
-export function isDepositMetadata(metadata: any): metadata is DepositMetadata {
+ function isDepositMetadata(metadata: any): metadata is DepositMetadata {
     return (
         typeof metadata === 'object' &&
         metadata !== null &&

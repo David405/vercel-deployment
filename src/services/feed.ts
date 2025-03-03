@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { prisma } from "../utils/prismaUtils";
 import { OnchainActivity, Prisma, Chain } from "@prisma/client";
-import { ActivityMetadata, ActivityType } from "../types";
+import { ActivityMetadata, ActivityType, Post} from "../types";
 import { validateOnChainActivity } from "../utils/validators";
 
 
@@ -24,9 +24,6 @@ interface PostCreateBody<T extends ActivityType> {
     };
     mediaUrl?: string;
 }
-
-
-
 
 
 export const createPost = asyncHandler(async (req: Request, res: Response) => {
@@ -106,7 +103,11 @@ export const getPostsByUsername = asyncHandler(async (req: Request, res: Respons
             include: {
                 posts: {
                     include: {
+                        
                         onchainActivity: true,
+                        comments: true,
+                        likes: true,
+                        dislikes: true,
                     },
                 },
             },
@@ -116,12 +117,36 @@ export const getPostsByUsername = asyncHandler(async (req: Request, res: Respons
             return res.status(404).json({ message: "User not found" });
         }
 
-        return res.status(200).json({ posts: user.posts });
+        // Format posts to match Post interface
+        const formattedPosts = user.posts.map(post => ({
+            id: post.id,
+            avatar: user.avatar || null,
+            username: user.username || null,
+            content: post.content,
+            createdAt: post.createdAt,
+            onChainActivity: post.onchainActivity,
+            commentsCount: post.comments.length,
+            comments: post.comments,
+            likeCount: post.likes.length,
+            likes: post.likes,
+            dislikeCount: post.dislikes.length,
+            dislikes: post.dislikes,
+            replies: [], // Assuming replies are part of comments or handled elsewhere
+            mediaUrl: post.mediaUrl || null,
+            enagagement: post.views, // Example engagement metric
+        }));
+
+        return res.status(200).json({ 
+            username : username ,
+            userId : user.id,
+            postCount : formattedPosts.length,
+            posts: formattedPosts });
     } catch (error) {
         console.error("Error fetching posts by username:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+
 
 // Function to get a single post by postId
 export const getPostById = asyncHandler(async (req: Request, res: Response) => {
@@ -131,18 +156,45 @@ export const getPostById = asyncHandler(async (req: Request, res: Response) => {
         const post = await prisma.post.findUnique({
             where: { id: postId },
             include: {
-                user: true,
+                user: {
+                    select : {
+                        avatar : true ,
+                        username : true,
+                    }
+                },
                 comments: true,
                 likes: true,
-                onchainActivity: true,
+                dislikes: true,
+                onchainActivity:true
             },
         });
+        
 
         if (!post) {
             return res.status(404).json({ message: "Post not found" });
         }
 
-        return res.status(200).json({ post });
+        // Format post to match interface
+        const formattedPost = {
+            id: post.id,
+            userId: post.userId,
+            avatar: post.user.avatar ||undefined,
+            username: post.user.username || undefined,
+            createdAt: post.createdAt,
+            content: post.content,
+            onChainActivity: post.onchainActivity,
+            commentsCount: post.comments.length,
+            comments: post.comments,
+            likeCount: post.likes.length,
+            like: post.likes ,
+            dislikeCount: post.dislikes.length,
+            dislike: post.dislikes,
+            replies: [], //replies are handled within comments
+            mediaUrl: post.mediaUrl || undefined,
+            enagagement: post.views, // Example engagement metric
+        };
+
+        return res.status(200).json({ post : formattedPost});
     } catch (error) {
         console.error("Error fetching post by ID:", error);
         return res.status(500).json({ message: "Internal server error" });

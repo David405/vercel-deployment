@@ -1,3 +1,5 @@
+import { OnchainActivity } from "@prisma/client";
+
 export interface Web3Account {
     address: string;
     chain: 'ethereum' | 'solana';
@@ -53,6 +55,7 @@ export interface SwapMetadata {
 export interface DepositMetadata {
     amount: string;
     walletAddress: string;
+    tokenAddress : string;
     source: string;
     fiatValue?: string; 
     marketCap?: string;// Optional fiat value of the deposit
@@ -76,25 +79,31 @@ export interface OnChainActivity<T extends ActivityType> {
     web3AccountId: string;
 }
 
-export interface Post<T extends ActivityType> {
+export interface Post {
     id: string;
     content: string;
     createdAt: Date;
-    updatedAt: Date;
     userId: string;
-    onChainActivity: OnChainActivity<T>[];
+    onChainActivity: OnchainActivity;
+    commentsCount:number;
     comments: Comment[];
+    likeCount:number;
     likes: Like[];
+    dislikeCount: number;
     dislikes: Dislike[];
     replies: Reply[];
     mediaUrl?: string;
+    avatar?:string;
+    username?:string;
+    enagagement: number;
+
 }
 
 interface Comment {
     id: string;
     content: string;
     createdAt: Date;
-    updatedAt: Date;
+   
     userId: string;
     postId: string;
 }
