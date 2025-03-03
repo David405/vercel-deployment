@@ -2,7 +2,6 @@ import {  Request, Response } from "express";
 import { UserProfile, Web3Account, SocialAccount } from "../types";
 import {  Chain } from "@prisma/client";
 import { validateAddressWithAdamik, validateEmail, validateUsername } from "../utils/validators";
-import jwt from "jsonwebtoken";
 import { asyncHandler } from "../utils/asyncHandler";
 import { prisma } from "../utils/prismaUtils";
 
@@ -63,82 +62,90 @@ export const checkUsername = asyncHandler(
   }
 );
  
-
 export const createUserProfile = asyncHandler(
   async (req: Request, res: Response) => {
     try {
       const body = req.body as CreateUserBody;
-      const validUser = await validateUsername(body.username);
       
-      if(!validUser.valid){
-        res.status(400).json({
-          message : validUser.message
+      // Validate username
+      const validUser = await validateUsername(body.username);
+      if (!validUser.valid) {
+        return res.status(400).json({
+          message: validUser.message
         });
       } else {
         console.log(validUser.message);
       }
-
+      
+      // Validate email for turnkey users
       if (body.type === "turnkey") {
-        
         const validEmail = await validateEmail(body.email);
-        if(!validEmail.valid){
-          res.send(400).json({
-            message : validEmail.message
+        if (!validEmail.valid) {
+          return res.status(400).json({
+            message: validEmail.message
           });
         } else {
-          console.log(validEmail.message)
+          console.log(validEmail.message);
         }
       }
-
+      
+      // Validate wallet address
       const validAddress = await validateAddressWithAdamik(body.account);
-      if(!validAddress.valid){
-        res.send(400).json({
-          message : validAddress.message
+      if (!validAddress.valid) {
+        return res.status(400).json({
+          message: validAddress.message
         });
       } else {
         console.log(validAddress.message);
       }
-
       
-
-      const userData = {
-        username: body.username,
-        bio: body.bio || null,
-        avatar: body.avatar || null,
-        email: body.type === "turnkey" ? body.email : null,
-        turnkeyWallet : body.type === "turnkey" ? body.account.address : null,
-        nonce : body.account.nonce,
-
-
-      };
-
-      const newUser  = await prisma.user.create({data:userData});
-
+      // Validate chain ID before creating any database entries
       if (body.account.chainId !== 'ethereum' && body.account.chainId !== 'solana') {
         return res.status(400).json({ error: "Invalid chain parameter" });
       }
-
-      const chain: Chain = body.account.chainId as unknown as Chain; 
       
-      const web3Wallet = {
-        userId : newUser.id,
-        address : body.account.address,
-        chain : chain,
-        isVerified : false
-      }
-
-    const newWeb3Wallet = await prisma.web3Account.create({data:web3Wallet});
-
-    res.status(201).json({
-      message:"User profile added successfully",
-      data : {profile : newUser,
-        wallet : newWeb3Wallet
-      }
-    })
-     
+      const result = await prisma.$transaction(async (prismaClient) => {
+        // Create user data object
+        const userData = {
+          username: body.username,
+          bio: body.bio || null,
+          avatar: body.avatar || null,
+          email: body.type === "turnkey" ? body.email : null,
+          turnkeyWallet: body.type === "turnkey" ? body.account.address : null,
+          nonce: body.account.nonce,
+        };
+        
+        // Create the user
+        const newUser = await prismaClient.user.create({ data: userData });
+        
+        const chain: Chain = body.account.chainId as unknown as Chain;
+        
+        // Create wallet data object
+        const web3Wallet = {
+          userId: newUser.id,
+          address: body.account.address,
+          chain: chain,
+          isVerified: false
+        };
+        
+        // Create the wallet
+        const newWeb3Wallet = await prismaClient.web3Account.create({ data: web3Wallet });
+        
+        return {
+          profile: newUser,
+          wallet: newWeb3Wallet
+        };
+      });
+      
+      // If we get here, both operations succeeded
+      res.status(201).json({
+        message: "User profile added successfully",
+        data: result
+      });
+      
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: "Internal Server Error" });
+      res.status(500).json({ error: "Internal Server Error", err });
     }
   }
 );
@@ -189,50 +196,5 @@ export const getUserProfile = asyncHandler(
       console.error(err);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  }
-);
-
-export const loginWithAddress = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { address, chain } = req.body;
-
-    if (!address || typeof address !== "string") {
-      return res.status(400).json({ error: "Invalid account address" });
-    }
-
-    const account = await prisma.web3Account.findUnique({
-      where: { address_chain: { address, chain } },
-      include: { user: true }, 
-    });
-
-    if (!account) {
-      return res.status(401).json({ error: "Account not found" });
-    }
-
-    const token = jwt.sign({ userId: account.userId }, process.env.SECRET!, {
-      expiresIn: "1h",
-    });
-
-    res.cookie("token", token, {
-      httpOnly: true, 
-      secure: process.env.NODE_ENV === "production", 
-      maxAge: 3600000,
-      sameSite: "strict",
-    });
-
-    const userDetails = account.user;
-
-    res.status(200).json({
-      message: "Login successful",
-      user: {
-        id: userDetails.id,
-        username: userDetails.username,
-        email: userDetails.email,
-        bio: userDetails.bio,
-        avatar: userDetails.avatar,
-        address: account.address,
-        isVerified: account.isVerified,
-      },
-    });
   }
 );
