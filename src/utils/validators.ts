@@ -1,6 +1,6 @@
 import { PrismaClient, User } from "@prisma/client"
 import axios from "axios";
-import { account } from "../services/users";
+import { account } from "../services/user";
 import { UserProfile } from "../types";
 
 
