@@ -8,22 +8,11 @@ import { validateOnChainActivity } from "../utils/validators";
 
 //* POST CREATION FLOW 
 //* 1. Get Post Data and OnChain Activity Data from Frontend
-//? 2. Validate the onchain activity
+//? 2. Validate the onchain activity (Currently just checking if the onchain activity is in valid format)
 //* 3. Create the onchain activity
 //* 4. Create the post
 //* 5. Return the post
 
-
-interface PostCreateBody<T extends ActivityType> {
-    content: string;
-    onChainActivity: {
-        activityType: T;
-        txHash: string;
-        chain: "ethereum" | "solana";
-        metadata: ActivityMetadata<T>;
-    };
-    mediaUrl?: string;
-}
 
 
 export const createPost = asyncHandler(async (req: Request, res: Response) => {
@@ -103,11 +92,10 @@ export const getPostsByUsername = asyncHandler(async (req: Request, res: Respons
             include: {
                 posts: {
                     include: {
-                        
                         onchainActivity: true,
-                        comments: true,
-                        likes: true,
-                        dislikes: true,
+                        comments: { select: { id: true } },
+                        likes: { select: { id: true } },
+                        dislikes: { select: { id: true } },
                     },
                 },
             },
@@ -126,21 +114,18 @@ export const getPostsByUsername = asyncHandler(async (req: Request, res: Respons
             createdAt: post.createdAt,
             onChainActivity: post.onchainActivity,
             commentsCount: post.comments.length,
-            comments: post.comments,
             likeCount: post.likes.length,
-            likes: post.likes,
             dislikeCount: post.dislikes.length,
-            dislikes: post.dislikes,
-            replies: [], // Assuming replies are part of comments or handled elsewhere
             mediaUrl: post.mediaUrl || null,
-            enagagement: post.views, // Example engagement metric
+            engagement: post.views, // engagement metric
         }));
 
         return res.status(200).json({ 
-            username : username ,
-            userId : user.id,
-            postCount : formattedPosts.length,
-            posts: formattedPosts });
+            username: username,
+            userId: user.id,
+            postCount: formattedPosts.length,
+            posts: formattedPosts 
+        });
     } catch (error) {
         console.error("Error fetching posts by username:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -153,21 +138,25 @@ export const getPostById = asyncHandler(async (req: Request, res: Response) => {
     const { postId } = req.params;
 
     try {
-        const post = await prisma.post.findUnique({
-            where: { id: postId },
-            include: {
-                user: {
-                    select : {
-                        avatar : true ,
-                        username : true,
-                    }
+        // Fetch post details & user info in parallel
+        const [post, comments, likes, dislikes] = await Promise.all([
+            prisma.post.findUnique({
+                where: { id: postId },
+                select: {
+                    id: true,
+                    userId: true,
+                    content: true,
+                    createdAt: true,
+                    mediaUrl: true,
+                    views: true,
+                    onchainActivity: true,
+                    user: { select: { avatar: true, username: true } },
                 },
-                comments: true,
-                likes: true,
-                dislikes: true,
-                onchainActivity:true
-            },
-        });
+            }),
+            prisma.comment.count({ where: { postId } }),
+            prisma.like.count({ where: { postId } }),
+            prisma.dislike.count({ where: { postId } }),
+        ]);
         
 
         if (!post) {
@@ -178,23 +167,19 @@ export const getPostById = asyncHandler(async (req: Request, res: Response) => {
         const formattedPost = {
             id: post.id,
             userId: post.userId,
-            avatar: post.user.avatar ||undefined,
+            avatar: post.user.avatar || undefined,
             username: post.user.username || undefined,
             createdAt: post.createdAt,
             content: post.content,
             onChainActivity: post.onchainActivity,
-            commentsCount: post.comments.length,
-            comments: post.comments,
-            likeCount: post.likes.length,
-            like: post.likes ,
-            dislikeCount: post.dislikes.length,
-            dislike: post.dislikes,
-            replies: [], //replies are handled within comments
+            commentsCount: comments,
+            likeCount: likes,
+            dislikeCount: dislikes,
             mediaUrl: post.mediaUrl || undefined,
-            enagagement: post.views, // Example engagement metric
+            engagement: post.views,
         };
 
-        return res.status(200).json({ post : formattedPost});
+        return res.status(200).json({ post: formattedPost });
     } catch (error) {
         console.error("Error fetching post by ID:", error);
         return res.status(500).json({ message: "Internal server error" });
