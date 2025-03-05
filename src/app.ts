@@ -6,6 +6,7 @@ import { PrismaClient } from "@prisma/client";
 import csrf from "csurf";
 import cookieParser from "cookie-parser";
 import { readdirSync } from "fs";
+import { join } from "path";
 import { errorHandler } from "./utils/errorHandler";
 
 dotenv.config();
@@ -13,6 +14,7 @@ dotenv.config();
 const prisma = new PrismaClient();
 const app = express();
 const port = process.env.PORT || 3002;
+const client = process.env.CLIENT;
 
 // CORS configuration
 const corsOptionsDelegate = (req: any, callback: any) => {
@@ -22,9 +24,9 @@ const corsOptionsDelegate = (req: any, callback: any) => {
   let allowedOrigin;
 
   if (appEnv === "development") {
-    allowedOrigin = `http://localhost:${port}`;
+    allowedOrigin = `http://localhost:${client}`;
   } else if (appEnv === "staging") {
-    allowedOrigin = [`http://localhost:${port}`, "https://staging.bloom.social"];
+    allowedOrigin = [`http://localhost:${client}`, "https://bloom-web-server.onrender.com"];
   } else if (appEnv === "production") {
     allowedOrigin = "https://bloom.social";
   }
@@ -98,6 +100,7 @@ process.on("unhandledRejection", (reason, promise) => {
 // Start server
 app.listen(port, () => {
   console.log(`Bloom server is running on port ${port}`);
+  console.log(`Heap Used: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`);
 });
 
 export { app, prisma };

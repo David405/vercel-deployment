@@ -1,7 +1,7 @@
 import 'express-session';
 
 declare module 'express-session' {
-  interface SessionData {
+  export interface SessionData {
     siwe?: {
       address: string;
       chainId: string;

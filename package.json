@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'node --loader ts-node/esm --experimental-specifier-resolution=node' src/app.ts",
+   "dev": "nodemon --watch 'src/**/*.ts' --exec 'node --max-old-space-size=4096 --loader ts-node/esm --experimental-specifier-resolution=node' src/app.ts",
     "migrate": "npx prisma migrate dev"
   },
   "keywords": [],
@@ -38,9 +38,11 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/big.js": "^6.2.2",
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
     "@types/csurf": "^1.11.5",
+    "@types/elliptic": "^6.4.18",
     "@types/express": "^5.0.0",
     "@types/express-session": "^1.18.1",
     "@types/jsonwebtoken": "^9.0.8",
