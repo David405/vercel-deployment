@@ -1,7 +1,7 @@
-import { PrismaClient, User } from "@prisma/client"
+import { Chain, PrismaClient, User } from "@prisma/client"
 import axios from "axios";
-import { account } from "../services/user";
-import { UserProfile } from "../types";
+import { account } from "../services/users";
+import { ActivityMetadata, ActivityType, DepositMetadata, MintMetadata, SwapMetadata, UserProfile } from "../types";
 
 
 const prisma = new PrismaClient();
@@ -110,3 +110,66 @@ export async function getUserAndCheckFollowingStatus(currentUserId: string, user
   
     return { isFollowing: !!existingFollow, userToCheck };
   }
+
+
+
+  // Type guard functions to validate metadata
+ function isMintMetadata(metadata: any): metadata is MintMetadata {
+    return (
+        typeof metadata === 'object' &&
+        metadata !== null &&
+        typeof metadata.contractAddress === 'string' &&
+        typeof metadata.tokenId === 'string' &&
+        typeof metadata.collection === 'string' &&
+        (metadata.fiatValue === undefined || typeof metadata.fiatValue === 'string') &&
+        (metadata.mediaUrl === undefined || typeof metadata.mediaUrl === 'string')
+    );
+}
+
+ function isSwapMetadata(metadata: any): metadata is SwapMetadata {
+    return (
+        typeof metadata === 'object' &&
+        metadata !== null &&
+        typeof metadata.fromToken === 'string' &&
+        typeof metadata.toToken === 'string' &&
+        typeof metadata.amountIn === 'string' &&
+        typeof metadata.amountOut === 'string' &&
+        typeof metadata.exchange === 'string' &&
+        (metadata.marketCap === undefined || typeof metadata.marketCap === 'string') &&
+        (metadata.fiatValue === undefined || typeof metadata.fiatValue === 'string') &&
+        (metadata.pnl === undefined || typeof metadata.pnl === 'string')
+    );
+}
+
+ function isDepositMetadata(metadata: any): metadata is DepositMetadata {
+    return (
+        typeof metadata === 'object' &&
+        metadata !== null &&
+        typeof metadata.amount === 'string' &&
+        typeof metadata.walletAddress === 'string' &&
+        typeof metadata.source === 'string' &&
+        (metadata.fiatValue === undefined || typeof metadata.fiatValue === 'string') &&
+        (metadata.marketCap === undefined || typeof metadata.marketCap === 'string')
+    );
+}
+
+  export function validateOnChainActivity<T extends ActivityType>(
+    activity: any
+): activity is { activityType: T; txHash: string; chain: Chain; metadata: ActivityMetadata<T> } {
+    if (!activity || typeof activity !== 'object') return false;
+    if (!activity.activityType || !activity.txHash || !activity.chain) return false;
+    
+    // Validate chain
+    if (activity.chain !== 'ethereum' && activity.chain !== 'solana') return false;
+    
+    // Validate metadata based on activity type
+    if (activity.activityType === ActivityType.Mint) {
+        return isMintMetadata(activity.metadata);
+    } else if (activity.activityType === ActivityType.Swap) {
+        return isSwapMetadata(activity.metadata);
+    } else if (activity.activityType === ActivityType.Deposit) {
+        return isDepositMetadata(activity.metadata);
+    }
+    
+    return false;
+}
