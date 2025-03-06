@@ -1,10 +1,9 @@
 import express from "express";
-import { checkAccountAddress, verifyAccountAddress, loginWithAddress } from "../services/auth";
+import { checkAccountAddress, verifyAndLogin } from "../services/auth";
 
 const router = express.Router();
 
 router.get("/auth/check-address", checkAccountAddress);
-router.post("/auth/verify", verifyAccountAddress);
-router.post("/auth/login", loginWithAddress);
+router.post("/auth/login", verifyAndLogin);
 
 export default router;
