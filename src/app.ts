@@ -59,7 +59,11 @@ app.use(session({
   }));
 
 // CSRF protection
-const csrfProtection = csrf({ cookie: true });
+const csrfProtection = csrf({ cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60,
+} });
 
 app.use((req, res, next) => {
   if (req.path.startsWith("/api")) {
