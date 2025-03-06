@@ -65,11 +65,16 @@ const csrfProtection = csrf({ cookie: {
     maxAge: 24 * 60 * 60,
 } });
 
+// Check if CSRF protection is enabled via environment variable
+const enableCsrfProtection = process.env.ENABLE_CSRF_PROTECTION === 'true';
+
+
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api")) {
+  if (enableCsrfProtection) {
+    // Apply CSRF protection only if enabled
     return csrfProtection(req, res, next);
   }
-  return csrfProtection(req, res, next);
+  next(); // Proceed without CSRF protection
 });
 
 // Dynamically import routes
@@ -81,8 +86,14 @@ readdirSync("./src/routes").forEach(async (file) => {
   });
 
 // CSRF token endpoint
-app.get("/api/security/csrf-token", csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
+app.get("/api/security/csrf-token", (req, res) => {
+  if (enableCsrfProtection) {
+    return csrfProtection(req, res, () => {
+      res.json({ csrfToken: req.csrfToken() });
+    });
+  } else {
+    res.status(403).json({ error: "CSRF protection is disabled" });
+  }
 });
 
 // API Health Check
