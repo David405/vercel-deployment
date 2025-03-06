@@ -42,105 +42,95 @@ const asyncHandler =
     }
   );
 
-  export const verifyAccountAddress = asyncHandler(
+  export const verifyAndLogin = asyncHandler(
     async (req: Request, res: Response) => {
       try {
-        const { message, signature } = req.body;
-        
-        
+        const { message, signature, address, chain } = req.body;
+
+        const account = await prisma.web3Account.findUnique({
+          where: { address_chain: { address, chain } },
+          include: { user: true },
+        });
+
+        if (!account) {
+          return res.status(401).json({ error: "Account not found" });
+        }
+
+        // Validate message and signature
         if (!message || typeof message !== "string") {
           return res.status(400).json({ error: "Invalid message" });
         }
         if (!signature || typeof signature !== "string") {
           return res.status(400).json({ error: "Missing or invalid signature" });
         }
-        
+
         // Extract address and chainId from the SIWE message
-        const address = getAddressFromMessage(message);
+        const extractedAddress = getAddressFromMessage(message);
         const chainId = getChainIdFromMessage(message);
-        
+
         const publicClient = createPublicClient({
           transport: http(
             `https://rpc.walletconnect.org/v1/?chainId=${chainId}&projectId=${process.env.PROJECT_ID}`
           ),
         });
-        
-        const formattedAddress = `0x${address}` as Hex;
+
+        const formattedAddress = `0x${extractedAddress}` as Hex;
         const formattedSignature = formatSignature(signature);
-      
+
         const isValid = await publicClient.verifyMessage({
-        message,
-        address: formattedAddress,
-        signature: formattedSignature,
+          message,
+          address: formattedAddress,
+          signature: formattedSignature,
         });
 
-      console.log(isValid);
-      
-      if (!isValid) {
-        throw new Error("Invalid signature");
-      }
-      
+        if (!isValid) {
+          return res.status(400).json({ error: "Invalid signature" });
+        }
+
         // Create a SIWE session
-        const siwe = JSON.stringify({ address, chainId, isValid });
-        
+        const siwe = JSON.stringify({ address: extractedAddress, chainId, isValid });
+
         res.cookie("siwe", siwe, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           maxAge: 3600000,
           sameSite: "strict",
         });
-        
-        res.status(200).json({ address, chainId, isValid });
 
+        // Validate address and chain for login
+        if (!address || typeof address !== "string") {
+          return res.status(400).json({ error: "Invalid account address" });
+        }
+
+        const token = jwt.sign({ userId: account.userId }, process.env.SECRET!, {
+          expiresIn: "1h",
+        });
+
+        res.cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 3600000,
+          sameSite: "strict",
+        });
+
+        const userDetails = account.user;
+
+        res.status(200).json({
+          message: "Login successful",
+          user: {
+            id: userDetails.id,
+            username: userDetails.username,
+            email: userDetails.email,
+            bio: userDetails.bio,
+            avatar: userDetails.avatar,
+            address: account.address,
+            isVerified: account.isVerified,
+          },
+        });
       } catch (e) {
-        console.error("SIWE Verification Error:", e);
+        console.error("Verification and Login Error:", e);
         res.status(500).json({ message: (e as Error).message });
       }
-    }
-  );
-  
-export const loginWithAddress = asyncHandler(
-    async (req: Request, res: Response) => {
-      const { address, chain } = req.body;
-  
-      if (!address || typeof address !== "string") {
-        return res.status(400).json({ error: "Invalid account address" });
-      }
-  
-      const account = await prisma.web3Account.findUnique({
-        where: { address_chain: { address, chain } },
-        include: { user: true }, 
-      });
-  
-      if (!account) {
-        return res.status(401).json({ error: "Account not found" });
-      }
-  
-      const token = jwt.sign({ userId: account.userId }, process.env.SECRET!, {
-        expiresIn: "1h",
-      });
-  
-      res.cookie("token", token, {
-        httpOnly: true, 
-        secure: process.env.NODE_ENV === "production", 
-        maxAge: 3600000,
-        sameSite: "strict",
-      });
-  
-      const userDetails = account.user;
-  
-      res.status(200).json({
-        message: "Login successful",
-        user: {
-          id: userDetails.id,
-          username: userDetails.username,
-          email: userDetails.email,
-          bio: userDetails.bio,
-          avatar: userDetails.avatar,
-          address: account.address,
-          isVerified: account.isVerified,
-        },
-      });
     }
   );
   
