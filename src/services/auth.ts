@@ -47,6 +47,11 @@ const asyncHandler =
       try {
         const { message, signature, address, chain } = req.body;
 
+        // Validate address for login
+        if (!address || typeof address !== "string") {
+          return res.status(400).json({ error: "Invalid account address" });
+        }
+        
         const account = await prisma.web3Account.findUnique({
           where: { address_chain: { address, chain } },
           include: { user: true },
@@ -96,11 +101,6 @@ const asyncHandler =
           maxAge: 3600000,
           sameSite: "strict",
         });
-
-        // Validate address and chain for login
-        if (!address || typeof address !== "string") {
-          return res.status(400).json({ error: "Invalid account address" });
-        }
 
         const token = jwt.sign({ userId: account.userId }, process.env.SECRET!, {
           expiresIn: "1h",

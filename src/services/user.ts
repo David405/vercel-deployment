@@ -6,6 +6,7 @@ import { validateAddressWithAdamik, validateEmail, validateUsername } from "../u
 import { asyncHandler } from "../utils/asyncHandler";
 import { prisma } from "../utils/prismaUtils";
 import { getAddressFromMessage, getChainIdFromMessage, formatSignature } from "../utils/helpers";
+import jwt from "jsonwebtoken";
 
 
 export type account  = {
@@ -175,6 +176,28 @@ export const createUserProfile = asyncHandler(
       });
 
       // If we get here, both operations succeeded
+
+      // Create a SIWE session
+      const siwe = JSON.stringify({ address: extractedAddress, chainId: body.account.chainId, isValid });
+
+      res.cookie("siwe", siwe, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 3600000,
+        sameSite: "strict",
+      });
+
+      const token = jwt.sign({ userId: result.profile.id }, process.env.SECRET!, {
+        expiresIn: "1h",
+      });
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 3600000,
+        sameSite: "strict",
+      });
+
       res.status(201).json({
         message: "User profile added successfully",
         data: result
