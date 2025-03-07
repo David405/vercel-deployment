@@ -1,0 +1,29 @@
+{
+  "informational": {
+    "100": {"name": "Continue", "use": "Indicates that the initial request was received and the client should continue."},
+    "101": {"name": "Switching Protocols", "use": "Informs the client that the server is switching protocols as requested."}
+  },
+  "success": {
+    "200": {"name": "OK", "use": "The request was successful."},
+    "201": {"name": "Created", "use": "A new resource was successfully created."},
+    "204": {"name": "No Content", "use": "The request was successful but there is no content to return."}
+  },
+  "redirection": {
+    "301": {"name": "Moved Permanently", "use": "The requested resource has been moved permanently to a new URL."},
+    "302": {"name": "Found (Moved Temporarily)", "use": "The resource is temporarily available at a different URL."},
+    "304": {"name": "Not Modified", "use": "Indicates the resource has not been modified since last request."}
+  },
+  "client_error": {
+    "400": {"name": "Bad Request", "use": "The server could not understand the request due to invalid syntax."},
+    "401": {"name": "Unauthorized", "use": "Authentication is required to access the resource."},
+    "403": {"name": "Forbidden", "use": "The client does not have permission to access the resource."},
+    "404": {"name": "Not Found", "use": "The requested resource could not be found."},
+    "429": {"name": "Too Many Requests", "use": "The client has sent too many requests in a given timeframe."}
+  },
+  "server_error": {
+    "500": {"name": "Internal Server Error", "use": "The server encountered an unexpected condition."},
+    "502": {"name": "Bad Gateway", "use": "Received an invalid response from an upstream server."},
+    "503": {"name": "Service Unavailable", "use": "The server is temporarily unable to handle the request."},
+    "504": {"name": "Gateway Timeout", "use": "The server did not receive a timely response from an upstream server."}
+  }
+}
