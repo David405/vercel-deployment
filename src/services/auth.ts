@@ -70,7 +70,7 @@ const asyncHandler =
         });
 
         if (!account) {
-          return res.status(401).json({ error: "Account not found" });
+          return res.status(404).json({ error: "Account not found" });
         }
 
         // Validate message and signature
@@ -101,7 +101,7 @@ const asyncHandler =
         });
 
         if (!isValid) {
-          return res.status(400).json({ error: "Invalid signature" });
+          return res.status(200).json({ error: "Invalid signature" });
         }
 
         // Create a SIWE session

@@ -54,7 +54,7 @@ export const checkUsername = asyncHandler(
       }
       else{
         console.log("invalid res :",response)
-        res.status(400).json(response);
+        res.status(200).json(response);
       }
       
     } catch(err){
@@ -75,7 +75,7 @@ export const createUserProfile = asyncHandler(
       // Validate username
       const validUser = await validateUsername(body.username);
       if (!validUser.valid) {
-        return res.status(400).json({
+        return res.status(200).json({
           message: validUser.message
         });
       } else {
@@ -86,7 +86,7 @@ export const createUserProfile = asyncHandler(
       if (body.type === "turnkey") {
         const validEmail = await validateEmail(body.email);
         if (!validEmail.valid) {
-          return res.status(400).json({
+          return res.status(200).json({
             message: validEmail.message
           });
         } else {
@@ -97,7 +97,7 @@ export const createUserProfile = asyncHandler(
       // Validate wallet address
       const validAddress = await validateAddressWithAdamik(body.account);
       if (!validAddress.valid) {
-        return res.status(400).json({
+        return res.status(200).json({
           message: validAddress.message
         });
       } else {
@@ -138,7 +138,7 @@ export const createUserProfile = asyncHandler(
       });
 
       if (!isValid) {
-        return res.status(400).json({ error: "Invalid signature" });
+        return res.status(200).json({ error: "Invalid signature" });
       }
 
       const result = await prisma.$transaction(async (prismaClient) => {
