@@ -7,7 +7,7 @@ export type account = {
   address: string;
   nonce: string;
   chainId: string;
-}
+};
 
 interface TurnkeyCreateUserBody {
   type: "turnkey";
@@ -44,9 +44,42 @@ export class UserService {
    * @param username The username to validate
    * @returns Object indicating validity and a message
    */
-  async validateUsername(username: string): Promise<{ valid: boolean; message: string }> {
+  async validateUsername(
+    username: string
+  ): Promise<{ valid: boolean; message: string }> {
     try {
-      return await this.userRepository.validateUsername(username);
+      // Check if username is empty
+      if (username.length <= 0) {
+        return { valid: false, message: "Username is required" };
+      }
+
+      // Check if username is too long
+      if (username.length > 20) {
+        return { valid: false, message: "Username is too long" };
+      }
+
+      // Check if username is too short or too long
+      const CHECK_USERNAME_LENGTH_AND_CHARACTERS = /^[a-zA-Z0-9_]{3,20}$/;
+      if (CHECK_USERNAME_LENGTH_AND_CHARACTERS.test(username)) {
+        return { valid: false, message: "Invalid characters in username" };
+      }
+
+      // Check if username contains banned words
+      // TODO: Check if username contains banned words
+      const bannedWords: string[] = []; // This should be populated from a configuration or database
+      if (bannedWords.some((word) => username.toLowerCase().includes(word))) {
+        return { valid: false, message: "Username contains banned words" };
+      }
+
+      // Check if username already exists
+      const existingUser = await this.userRepository.findUserByUsername(
+        username
+      );
+      if (!existingUser) {
+        return { valid: true, message: "Username is available" };
+      } else {
+        return { valid: false, message: "Username is already taken" };
+      }
     } catch (error) {
       console.error("Error validating username:", error);
       throw error;
@@ -58,7 +91,9 @@ export class UserService {
    * @param email The email to validate
    * @returns Object indicating validity and a message
    */
-  async validateEmail(email: string): Promise<{ valid: boolean; message: string }> {
+  async validateEmail(
+    email: string
+  ): Promise<{ valid: boolean; message: string }> {
     try {
       return await this.userRepository.validateEmail(email);
     } catch (error) {
@@ -72,17 +107,21 @@ export class UserService {
    * @param userData The user data to create
    * @returns The created user and web3 account
    */
-  async createUser(userData: CreateUserBody): Promise<{ profile: User; wallet: PrismaWeb3Account }> {
+  async createUser(
+    userData: CreateUserBody
+  ): Promise<{ profile: User; wallet: PrismaWeb3Account }> {
     try {
       // Validate username
-      const validUser = await this.userRepository.validateUsername(userData.username);
+      const validUser = await this.validateUsername(userData.username);
       if (!validUser.valid) {
         throw new Error(validUser.message);
       }
 
       // Validate email for turnkey users
       if (userData.type === "turnkey") {
-        const validEmail = await this.userRepository.validateEmail(userData.email);
+        const validEmail = await this.userRepository.validateEmail(
+          userData.email
+        );
         if (!validEmail.valid) {
           throw new Error(validEmail.message);
         }
@@ -93,31 +132,38 @@ export class UserService {
       if (!validAddress.valid) {
         throw new Error(validAddress.message);
       }
-      
+
       // Validate chain ID
-      if (userData.account.chainId !== 'ethereum' && userData.account.chainId !== 'solana') {
+      if (
+        userData.account.chainId !== "ethereum" &&
+        userData.account.chainId !== "solana"
+      ) {
         throw new Error("Invalid chain parameter");
       }
-      
+
       // Prepare user data
       const userDataForRepo = {
         username: userData.username,
         bio: userData.bio || null,
         avatar: userData.avatar || null,
         email: userData.type === "turnkey" ? userData.email : null,
-        turnkeyWallet: userData.type === "turnkey" ? userData.account.address : null,
+        turnkeyWallet:
+          userData.type === "turnkey" ? userData.account.address : null,
         nonce: userData.account.nonce,
       };
-      
+
       // Prepare web3 account data
       const web3AccountData = {
         address: userData.account.address,
         chain: userData.account.chainId as Chain,
-        isVerified: false
+        isVerified: false,
       };
-      
+
       // Create the user and web3 account
-      return await this.userRepository.createUser(userDataForRepo, web3AccountData);
+      return await this.userRepository.createUser(
+        userDataForRepo,
+        web3AccountData
+      );
     } catch (error) {
       console.error("Error creating user:", error);
       throw error;
@@ -132,11 +178,11 @@ export class UserService {
   async getUserProfile(username: string): Promise<UserProfile | null> {
     try {
       const user = await this.userRepository.getUserByUsername(username);
-      
+
       if (!user) {
         return null;
       }
-      
+
       // Format the user data for the response
       return {
         id: user.id,

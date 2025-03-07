@@ -1,4 +1,10 @@
-import { Chain, PrismaClient, SocialAccount, User, Web3Account } from "@prisma/client";
+import {
+  Chain,
+  PrismaClient,
+  SocialAccount,
+  User,
+  Web3Account,
+} from "@prisma/client";
 import { prisma } from "../utils/prismaUtils";
 
 export class UserRepository {
@@ -13,29 +19,11 @@ export class UserRepository {
    * @param username The username to validate
    * @returns Object indicating validity and a message
    */
-  async validateUsername(
-    username: string
-  ): Promise<{ valid: boolean; message: string }> {
-    // Check characters
-    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-      return { valid: false, message: "Invalid characters in username" };
-    }
-
-    // TODO: Check if username contains banned words
-    const bannedWords: string[] = []; // This should be populated from a configuration or database
-    if (bannedWords.some((word) => username.toLowerCase().includes(word))) {
-      return { valid: false, message: "Username contains banned words" };
-    }
-
+  async findUserByUsername(username: string): Promise<unknown> {
     // Check if username already exists
-    const existingUser = await this.prisma.user.findUnique({
+    return await this.prisma.user.findUnique({
       where: { username },
     });
-    if (existingUser) {
-      return { valid: false, message: "Username already taken" };
-    }
-
-    return { valid: true, message: "Username is available" };
   }
 
   /**
