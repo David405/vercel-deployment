@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { checkUsername, createUserProfile, getUserProfile } from "../services/user";
+import { userController } from "../controllers";
 import { authenticateUser } from "../middleware/auth";
 
 const router = Router();
 
-router.post("/users/create" , createUserProfile);
-router.get("/users/:username" , authenticateUser, getUserProfile);
-router.get("/users/validate-username/:username",checkUsername);
+router.post("/users/create", userController.create);
+router.get("/users/:username", authenticateUser, userController.getProfile);
+router.get("/users/validate-username/:username", userController.validateUsername);
 
 export default router;

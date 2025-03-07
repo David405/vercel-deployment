@@ -1,20 +1,15 @@
-import {  Request, Response } from "express";
 import { UserProfile, Web3Account, SocialAccount } from "../types";
-import {  Chain } from "@prisma/client";
+import { Chain, User, Web3Account as PrismaWeb3Account } from "@prisma/client";
 import { validateAddressWithAdamik, validateEmail, validateUsername } from "../utils/validators";
-import { asyncHandler } from "../utils/asyncHandler";
-import { prisma } from "../utils/prismaUtils";
+import { UserRepository } from "../repositories/userRepository";
 
-
-export type account  = {
-  address : string;
-  nonce : string;
-  chainId : string;
+export type account = {
+  address: string;
+  nonce: string;
+  chainId: string;
 }
 
-
-
-interface TurnkeyCreateUserBody {
+export interface TurnkeyCreateUserBody {
   type: "turnkey";
   username: string;
   email: string;
@@ -23,7 +18,7 @@ interface TurnkeyCreateUserBody {
   account: account;
 }
 
-interface ThirdPartyCreateUserBody {
+export interface ThirdPartyCreateUserBody {
   type: "third-party";
   username: string;
   bio?: string;
@@ -31,145 +26,115 @@ interface ThirdPartyCreateUserBody {
   account: account;
 }
 
-type CreateUserBody = TurnkeyCreateUserBody | ThirdPartyCreateUserBody;
+export type CreateUserBody = TurnkeyCreateUserBody | ThirdPartyCreateUserBody;
 
-// * Create User Profile
+export class UserService {
+  private userRepository: UserRepository;
 
+  constructor() {
+    this.userRepository = new UserRepository();
+  }
 
-export const checkUsername = asyncHandler(
-  async (req:Request , res:Response) => {
-    try{
-      console.log(
-      "Calling Function"
-      )
-      const {username} = req.params;
-      const response = await validateUsername(username);
-      if( response.valid){
-        res.status(200).json(response);
-      }
-      else{
-        console.log("invalid res :",response)
-        res.status(400).json(response);
-      }
-      
-    } catch(err){
-      console.log(err);
-      res.status(500).json({
-        message:"Error validating username",
-        error : err,
-      })
+  /**
+   * Validates if a username is available
+   * @param username The username to validate
+   * @returns Object indicating validity and a message
+   */
+  async validateUsername(username: string): Promise<{ valid: boolean; message: string }> {
+    try {
+      return await this.userRepository.validateUsername(username);
+    } catch (error) {
+      console.error("Error validating username:", error);
+      throw error;
     }
   }
-);
- 
-export const createUserProfile = asyncHandler(
-  async (req: Request, res: Response) => {
+
+  /**
+   * Validates an email address
+   * @param email The email to validate
+   * @returns Object indicating validity and a message
+   */
+  async validateEmail(email: string): Promise<{ valid: boolean; message: string }> {
     try {
-      const body = req.body as CreateUserBody;
-      
+      return await this.userRepository.validateEmail(email);
+    } catch (error) {
+      console.error("Error validating email:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Creates a new user profile with associated web3 account
+   * @param userData The user data to create
+   * @returns The created user and web3 account
+   */
+  async createUser(userData: CreateUserBody): Promise<{ profile: User; wallet: PrismaWeb3Account }> {
+    try {
       // Validate username
-      const validUser = await validateUsername(body.username);
+      const validUser = await this.userRepository.validateUsername(userData.username);
       if (!validUser.valid) {
-        return res.status(400).json({
-          message: validUser.message
-        });
-      } else {
-        console.log(validUser.message);
+        throw new Error(validUser.message);
       }
       
       // Validate email for turnkey users
-      if (body.type === "turnkey") {
-        const validEmail = await validateEmail(body.email);
+      if (userData.type === "turnkey") {
+        const validEmail = await this.userRepository.validateEmail(userData.email);
         if (!validEmail.valid) {
-          return res.status(400).json({
-            message: validEmail.message
-          });
-        } else {
-          console.log(validEmail.message);
+          throw new Error(validEmail.message);
         }
       }
       
       // Validate wallet address
-      const validAddress = await validateAddressWithAdamik(body.account);
+      const validAddress = await validateAddressWithAdamik(userData.account);
       if (!validAddress.valid) {
-        return res.status(400).json({
-          message: validAddress.message
-        });
-      } else {
-        console.log(validAddress.message);
+        throw new Error(validAddress.message);
       }
       
-      // Validate chain ID before creating any database entries
-      if (body.account.chainId !== 'ethereum' && body.account.chainId !== 'solana') {
-        return res.status(400).json({ error: "Invalid chain parameter" });
+      // Validate chain ID
+      if (userData.account.chainId !== 'ethereum' && userData.account.chainId !== 'solana') {
+        throw new Error("Invalid chain parameter");
       }
       
-      const result = await prisma.$transaction(async (prismaClient) => {
-        // Create user data object
-        const userData = {
-          username: body.username,
-          bio: body.bio || null,
-          avatar: body.avatar || null,
-          email: body.type === "turnkey" ? body.email : null,
-          turnkeyWallet: body.type === "turnkey" ? body.account.address : null,
-          nonce: body.account.nonce,
-        };
-        
-        // Create the user
-        const newUser = await prismaClient.user.create({ data: userData });
-        
-        const chain: Chain = body.account.chainId as unknown as Chain;
-        
-        // Create wallet data object
-        const web3Wallet = {
-          userId: newUser.id,
-          address: body.account.address,
-          chain: chain,
-          isVerified: false
-        };
-        
-        // Create the wallet
-        const newWeb3Wallet = await prismaClient.web3Account.create({ data: web3Wallet });
-        
-        return {
-          profile: newUser,
-          wallet: newWeb3Wallet
-        };
-      });
+      // Prepare user data
+      const userDataForRepo = {
+        username: userData.username,
+        bio: userData.bio || null,
+        avatar: userData.avatar || null,
+        email: userData.type === "turnkey" ? userData.email : null,
+        turnkeyWallet: userData.type === "turnkey" ? userData.account.address : null,
+        nonce: userData.account.nonce,
+      };
       
-      // If we get here, both operations succeeded
-      res.status(201).json({
-        message: "User profile added successfully",
-        data: result
-      });
+      // Prepare web3 account data
+      const web3AccountData = {
+        address: userData.account.address,
+        chain: userData.account.chainId as Chain,
+        isVerified: false
+      };
       
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Internal Server Error", err });
+      // Create the user and web3 account
+      return await this.userRepository.createUser(userDataForRepo, web3AccountData);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      throw error;
     }
   }
-);
 
-// * Fetch User Profile
-export const getUserProfile = asyncHandler(
-  async (req: Request, res: Response) => {
+  /**
+   * Gets a user profile by username
+   * @param username The username to lookup
+   * @returns The formatted user profile or null if not found
+   */
+  async getUserProfile(username: string): Promise<UserProfile | null> {
     try {
-      const { username } = req.params;
-      const user = await prisma.user.findUnique({
-        where: { username },
-        include: {
-          web3Accounts: true,
-          socialAccounts: true,
-          followers: true,
-          following: true,
-        },
-      });
-
+      const user = await this.userRepository.getUserByUsername(username);
+      
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        return null;
       }
-
-      const userProfile: UserProfile = {
+      
+      // Format the user data for the response
+      return {
         id: user.id,
         username: user.username,
         bio: user.bio || undefined,
@@ -177,24 +142,19 @@ export const getUserProfile = asyncHandler(
         email: user.email || undefined,
         web3Accounts: user.web3Accounts.map((acc) => ({
           address: acc.address,
-          chain: acc.chain as "ethereum" | "solana" , // Ensuring TypeScript compatibility
+          chain: acc.chain as "ethereum" | "solana",
           isVerified: acc.isVerified,
-        })) as Web3Account[], // Explicitly casting to Web3Account[]
-        socialAccounts: user.socialAccounts.map((acc: SocialAccount) => ({
+        })),
+        socialAccounts: user.socialAccounts.map((acc) => ({
           platform: acc.platform,
           username: acc.username,
-        })), // Removed `isVerified`
+        })),
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       };
-
-      res.status(200).json({
-        message: "User profile retrieved",
-        data: userProfile,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Internal Server Error" });
+    } catch (error) {
+      console.error("Error getting user profile:", error);
+      throw error;
     }
   }
-);
+}
