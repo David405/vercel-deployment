@@ -3,6 +3,8 @@ import { Request, Response, NextFunction } from "express";
 
 import { createPublicClient, http, type Hex } from 'viem';
 import jwt from "jsonwebtoken";
+import csrf from "csurf";
+import { v4 as uuidv4 } from 'uuid';
 
 import { getAddressFromMessage, getChainIdFromMessage, formatSignature } from "../utils/helpers";
 
@@ -39,6 +41,17 @@ const asyncHandler =
       }
   
       res.status(200).json({ exists: true, ownedByUser: !!account.userId });
+    }
+  );
+
+  export const generateNonce = asyncHandler(
+    async (req: Request, res: Response) => {
+      const nonce = uuidv4();
+
+      res.status(200).json({
+        message: "Nonce generated successfully",
+        nonce: nonce, 
+      });
     }
   );
 
