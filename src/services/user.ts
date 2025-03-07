@@ -1,7 +1,7 @@
-import { UserProfile, Web3Account, SocialAccount } from "../types";
-import { Chain, User, Web3Account as PrismaWeb3Account } from "@prisma/client";
-import { validateAddressWithAdamik, validateEmail, validateUsername } from "../utils/validators";
+import { Chain, Web3Account as PrismaWeb3Account, User } from "@prisma/client";
 import { UserRepository } from "../repositories/userRepository";
+import { UserProfile } from "../types";
+import { validateAddressWithAdamik } from "../utils/validators";
 
 export type account = {
   address: string;
@@ -9,13 +9,15 @@ export type account = {
   chainId: string;
 }
 
-export interface TurnkeyCreateUserBody {
+interface TurnkeyCreateUserBody {
   type: "turnkey";
   username: string;
   email: string;
   bio?: string;
   avatar?: string;
   account: account;
+  message: string;
+  signature: string;
 }
 
 export interface ThirdPartyCreateUserBody {
@@ -24,6 +26,8 @@ export interface ThirdPartyCreateUserBody {
   bio?: string;
   avatar?: string;
   account: account;
+  message: string;
+  signature: string;
 }
 
 export type CreateUserBody = TurnkeyCreateUserBody | ThirdPartyCreateUserBody;
@@ -75,7 +79,7 @@ export class UserService {
       if (!validUser.valid) {
         throw new Error(validUser.message);
       }
-      
+
       // Validate email for turnkey users
       if (userData.type === "turnkey") {
         const validEmail = await this.userRepository.validateEmail(userData.email);
@@ -83,7 +87,7 @@ export class UserService {
           throw new Error(validEmail.message);
         }
       }
-      
+
       // Validate wallet address
       const validAddress = await validateAddressWithAdamik(userData.account);
       if (!validAddress.valid) {
