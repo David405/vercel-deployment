@@ -1,9 +1,12 @@
 import {  Request, Response } from "express";
+import { createPublicClient, http, type Hex } from 'viem';
 import { UserProfile, Web3Account, SocialAccount } from "../types";
 import {  Chain } from "@prisma/client";
 import { validateAddressWithAdamik, validateEmail, validateUsername } from "../utils/validators";
 import { asyncHandler } from "../utils/asyncHandler";
 import { prisma } from "../utils/prismaUtils";
+import { getAddressFromMessage, getChainIdFromMessage, formatSignature } from "../utils/helpers";
+import jwt from "jsonwebtoken";
 
 
 export type account  = {
@@ -12,8 +15,6 @@ export type account  = {
   chainId : string;
 }
 
-
-
 interface TurnkeyCreateUserBody {
   type: "turnkey";
   username: string;
@@ -21,6 +22,8 @@ interface TurnkeyCreateUserBody {
   bio?: string;
   avatar?: string;
   account: account;
+  message: string;
+  signature: string;
 }
 
 interface ThirdPartyCreateUserBody {
@@ -29,6 +32,8 @@ interface ThirdPartyCreateUserBody {
   bio?: string;
   avatar?: string;
   account: account;
+  message: string;
+  signature: string;
 }
 
 type CreateUserBody = TurnkeyCreateUserBody | ThirdPartyCreateUserBody;
@@ -66,7 +71,7 @@ export const createUserProfile = asyncHandler(
   async (req: Request, res: Response) => {
     try {
       const body = req.body as CreateUserBody;
-      
+
       // Validate username
       const validUser = await validateUsername(body.username);
       if (!validUser.valid) {
@@ -76,7 +81,7 @@ export const createUserProfile = asyncHandler(
       } else {
         console.log(validUser.message);
       }
-      
+
       // Validate email for turnkey users
       if (body.type === "turnkey") {
         const validEmail = await validateEmail(body.email);
@@ -88,7 +93,7 @@ export const createUserProfile = asyncHandler(
           console.log(validEmail.message);
         }
       }
-      
+
       // Validate wallet address
       const validAddress = await validateAddressWithAdamik(body.account);
       if (!validAddress.valid) {
@@ -98,13 +103,46 @@ export const createUserProfile = asyncHandler(
       } else {
         console.log(validAddress.message);
       }
-      
+
       // Validate chain ID before creating any database entries
       if (body.account.chainId !== 'ethereum' && body.account.chainId !== 'solana') {
         return res.status(400).json({ error: "Invalid chain parameter" });
       }
-      
+
+      // Verify the signature
+      const { message, signature } = body; 
+
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ error: "Invalid message" });
+      }
+      if (!signature || typeof signature !== "string") {
+        return res.status(400).json({ error: "Missing or invalid signature" });
+      }
+
+      // Extract address and chainId from the SIWE message
+      const extractedAddress = getAddressFromMessage(message);
+
+      const publicClient = createPublicClient({
+        transport: http(
+          `https://rpc.walletconnect.org/v1/?chainId=${body.account.chainId}&projectId=${process.env.PROJECT_ID}`
+        ),
+      });
+
+      const formattedAddress = `0x${extractedAddress}` as Hex;
+      const formattedSignature = formatSignature(signature);
+
+      const isValid = await publicClient.verifyMessage({
+        message,
+        address: formattedAddress,
+        signature: formattedSignature,
+      });
+
+      if (!isValid) {
+        return res.status(400).json({ error: "Invalid signature" });
+      }
+
       const result = await prisma.$transaction(async (prismaClient) => {
+
         // Create user data object
         const userData = {
           username: body.username,
@@ -114,35 +152,57 @@ export const createUserProfile = asyncHandler(
           turnkeyWallet: body.type === "turnkey" ? body.account.address : null,
           nonce: body.account.nonce,
         };
-        
+
         // Create the user
         const newUser = await prismaClient.user.create({ data: userData });
-        
+
         const chain: Chain = body.account.chainId as unknown as Chain;
-        
+
         // Create wallet data object
         const web3Wallet = {
           userId: newUser.id,
           address: body.account.address,
           chain: chain,
-          isVerified: false
+          isVerified: true
         };
-        
+
         // Create the wallet
         const newWeb3Wallet = await prismaClient.web3Account.create({ data: web3Wallet });
-        
+
         return {
           profile: newUser,
           wallet: newWeb3Wallet
         };
       });
-      
+
       // If we get here, both operations succeeded
+
+      // Create a SIWE session
+      const siwe = JSON.stringify({ address: extractedAddress, chainId: body.account.chainId, isValid });
+
+      res.cookie("siwe", siwe, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 3600000,
+        sameSite: "strict",
+      });
+
+      const token = jwt.sign({ userId: result.profile.id }, process.env.SECRET!, {
+        expiresIn: "1h",
+      });
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 3600000,
+        sameSite: "strict",
+      });
+
       res.status(201).json({
         message: "User profile added successfully",
         data: result
       });
-      
+
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Internal Server Error", err });
