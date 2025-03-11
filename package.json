@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
-   "dev": "nodemon --watch 'src/**/*.ts' --exec 'node --max-old-space-size=4096 --loader ts-node/esm --experimental-specifier-resolution=node' src/app.ts",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'node --max-old-space-size=4096 --loader ts-node/esm --experimental-specifier-resolution=node' src/app.ts",
     "migrate": "npx prisma migrate dev"
   },
   "keywords": [],
@@ -29,6 +29,7 @@
     "express": "^4.21.2",
     "express-session": "^1.18.1",
     "helmet": "^8.0.0",
+    "http-status-codes": "2.3.0",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^6.3.1",
     "siwe": "^3.0.0",
