@@ -61,14 +61,20 @@ export class UserService {
     // Check if username is too short or too long
     const CHECK_USERNAME_LENGTH_AND_CHARACTERS = /^[a-zA-Z0-9_]{3,20}$/;
     if (!CHECK_USERNAME_LENGTH_AND_CHARACTERS.test(username)) {
-      throw CustomError.BadRequest("Invalid Username", "Invalid characters in username");
+      throw CustomError.BadRequest(
+        "Invalid Username",
+        "Invalid characters in username"
+      );
     }
 
     // Check if username contains banned words
     // TODO: Check if username contains banned words
     const bannedWords: string[] = []; // This should be populated from a configuration or database
     if (bannedWords.some((word) => username.toLowerCase().includes(word))) {
-      throw CustomError.BadRequest("Invalid Username", "Username contains banned words");
+      throw CustomError.BadRequest(
+        "Invalid Username",
+        "Username contains banned words"
+      );
     }
 
     // Check if username already exists
@@ -76,7 +82,10 @@ export class UserService {
     if (!existingUser) {
       return { valid: true, message: "Username is available" };
     } else {
-      throw CustomError.BadRequest("Invalid Username", "Username is already taken");
+      throw CustomError.BadRequest(
+        "Invalid Username",
+        "Username is already taken"
+      );
     }
   }
 
@@ -212,9 +221,11 @@ export class UserService {
    * @param username The username to lookup
    * @returns The formatted user profile or null if not found
    */
-  async getUserProfile(username: string): Promise<UserProfile | null> {
+  async getUserProfile(username: string): Promise<UserProfile> {
     const user = await this.userRepository.getUserByUsername(username);
-    if (!user) return null;
+    if (!user) {
+      throw CustomError.NotFound("User not found");
+    }
 
     return {
       id: user.id,
