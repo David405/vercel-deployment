@@ -3,6 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import { CreateUserBody, UserService } from "../services/user";
 import { asyncHandler } from "../utils/asyncHandler";
 import { handleError, CustomError } from "../utils/errors";
+import { sendJsonResponse } from "../utils/sendSuccessResponse";
 
 
 export class UserController {
@@ -20,8 +21,6 @@ export class UserController {
   validateUsername = asyncHandler(async (req: Request, res: Response) => {
     try {
       const { username } = req.params;
-
-      throw Error("This is a random error");
 
       if (!username) {
         throw CustomError.BadRequest("Username is required in request params");
@@ -52,9 +51,10 @@ export class UserController {
       }
       const { profile, wallet } = await this.userService.createUser(userData);
 
-      return res.status(201).json({
-        success: true,
-        data: {
+      return sendJsonResponse(
+        res, 
+        StatusCodes.CREATED,
+        {
           profile: {
             id: profile.id,
             username: profile.username,
@@ -69,7 +69,6 @@ export class UserController {
             chain: wallet.chain,
             isVerified: wallet.isVerified,
           },
-        },
       });
     } catch (error: unknown) {
       return handleError(res, error as Error | CustomError);
