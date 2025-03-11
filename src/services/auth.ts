@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from "express";
 import { createPublicClient, http, type Hex } from 'viem';
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from 'uuid';
+import { createHmac } from 'crypto';
 
 import { getAddressFromMessage, getChainIdFromMessage, formatSignature } from "../utils/helpers";
 
@@ -45,14 +46,27 @@ const asyncHandler =
 
   export const generateNonce = asyncHandler(
     async (req: Request, res: Response) => {
-      const nonce = uuidv4();
+        // Get the secret from environment variable
+        const secret = process.env.SECRET;
+        
+        if (!secret) {
+            throw new Error('NONCE_SECRET environment variable is required');
+        }
 
-      res.status(200).json({
-        message: "Nonce generated successfully",
-        nonce: nonce, 
-      });
+        // Generate a UUID
+        const uuid = uuidv4();
+        
+        // Create an HMAC using the secret and UUID
+        const hmac = createHmac('sha256', secret);
+        hmac.update(uuid);
+        const nonce = hmac.digest('hex');
+
+        res.status(200).json({
+            message: "Nonce generated successfully",
+            nonce: nonce,
+        });
     }
-  );
+);
 
   export const verifyAndLogin = asyncHandler(
     async (req: Request, res: Response) => {
