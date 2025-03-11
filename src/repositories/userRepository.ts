@@ -31,18 +31,29 @@ export class UserRepository {
    * @param email The email to validate
    * @returns Object indicating validity and a message
    */
-  async validateEmail(
+  async findUserByEmail(
     email: string
-  ): Promise<{ valid: boolean; message: string }> {
-    const existingEmail = await this.prisma.user.findUnique({
+  ): Promise<unknown> {
+    return await this.prisma.user.findUnique({
       where: { email },
     });
-    if (existingEmail) {
-      return { valid: false, message: "Email already registered" };
-    }
-
-    return { valid: true, message: "Email is valid" };
   }
+
+  async findUserByAddress(address: string): Promise<unknown> {
+    return await this.prisma.user.findFirst({
+      where: {
+        web3Accounts: {
+          some: {
+            address: address,
+          },
+        },
+      },
+      include: {
+        web3Accounts: true, // Include Web3 accounts if needed
+      },
+    });
+  }
+  
 
   /**
    * Creates a user and their associated web3 account

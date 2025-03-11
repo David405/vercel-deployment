@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
+import { CreateUserBody, UserService } from "../services/user";
 import { asyncHandler } from "../utils/asyncHandler";
-import { UserService, CreateUserBody } from "../services/user";
+import { getErrorDetails, sendErrorResponse } from "../utils/sendErrorResponse";
 
 export class UserController {
   private userService: UserService;
@@ -15,21 +17,27 @@ export class UserController {
    * @param res Express response object
    */
   validateUsername = asyncHandler(async (req: Request, res: Response) => {
-    const { username } = req.params;
+    try {
+      const { username } = req.params;
 
-    if (!username) {
-      return res.status(400).json({
-        success: false,
-        message: "Username is required",
+      if (!username) {
+        return sendErrorResponse(
+          res,
+          StatusCodes.BAD_REQUEST,
+          "Username is required"
+        );
+      }
+
+      const result = await this.userService.validateUsername(username);
+
+      return res.status(StatusCodes.OK).json({
+        success: result.valid,
+        message: result.message,
       });
+    } catch (error: unknown) {
+      const { statusCode, message, stack } = getErrorDetails(error);
+      return sendErrorResponse(res, statusCode, message, stack);
     }
-
-    const result = await this.userService.validateUsername(username);
-    
-    return res.status(200).json({
-      success: result.valid,
-      message: result.message,
-    });
   });
 
   /**
@@ -38,18 +46,18 @@ export class UserController {
    * @param res Express response object
    */
   create = asyncHandler(async (req: Request, res: Response) => {
-    const userData: CreateUserBody = req.body;
-
-    if (!userData) {
-      return res.status(400).json({
-        success: false,
-        message: "User data is required",
-      });
-    }
-
     try {
+      const userData: CreateUserBody = req.body;
+
+      if (!userData || Object.keys(userData).length === 0) {
+        return sendErrorResponse(
+          res,
+          StatusCodes.BAD_REQUEST,
+          "User data is required"
+        );
+      }
       const { profile, wallet } = await this.userService.createUser(userData);
-      
+
       return res.status(201).json({
         success: true,
         data: {
@@ -66,7 +74,7 @@ export class UserController {
             address: wallet.address,
             chain: wallet.chain,
             isVerified: wallet.isVerified,
-          }
+          },
         },
       });
     } catch (error: any) {
@@ -86,19 +94,13 @@ export class UserController {
     const { username } = req.params;
 
     if (!username) {
-      return res.status(400).json({
-        success: false,
-        message: "Username is required",
-      });
+      return sendErrorResponse(res, StatusCodes.BAD_REQUEST, 'Username is required')
     }
 
     const userProfile = await this.userService.getUserProfile(username);
 
     if (!userProfile) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return sendErrorResponse(res, StatusCodes.NOT_FOUND, 'User not found')
     }
 
     return res.status(200).json({
@@ -107,4 +109,3 @@ export class UserController {
     });
   });
 }
-
