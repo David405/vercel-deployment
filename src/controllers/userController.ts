@@ -77,11 +77,9 @@ export class UserController {
           },
         },
       });
-    } catch (error: any) {
-      return res.status(400).json({
-        success: false,
-        message: error.message || "Failed to create user",
-      });
+    } catch (error: unknown) {
+      const { statusCode, message, stack } = getErrorDetails(error);
+      return sendErrorResponse(res, statusCode, message, stack);
     }
   });
 
@@ -91,21 +89,30 @@ export class UserController {
    * @param res Express response object
    */
   getProfile = asyncHandler(async (req: Request, res: Response) => {
-    const { username } = req.params;
+    try {
+      const { username } = req.params;
 
-    if (!username) {
-      return sendErrorResponse(res, StatusCodes.BAD_REQUEST, 'Username is required')
+      if (!username) {
+        return sendErrorResponse(
+          res,
+          StatusCodes.BAD_REQUEST,
+          "Username is required"
+        );
+      }
+
+      const userProfile = await this.userService.getUserProfile(username);
+
+      if (!userProfile) {
+        return sendErrorResponse(res, StatusCodes.NOT_FOUND, "User not found");
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: userProfile,
+      });
+    } catch (error: unknown) {
+      const { statusCode, message, stack } = getErrorDetails(error);
+      return sendErrorResponse(res, statusCode, message, stack);
     }
-
-    const userProfile = await this.userService.getUserProfile(username);
-
-    if (!userProfile) {
-      return sendErrorResponse(res, StatusCodes.NOT_FOUND, 'User not found')
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: userProfile,
-    });
   });
 }
