@@ -1,4 +1,4 @@
-import { ReasonPhrases, StatusCodes, getReasonPhrase } from "http-status-codes";
+import { StatusCodes, getReasonPhrase } from "http-status-codes";
 
 export interface ICustomError {
   status: StatusCodes,

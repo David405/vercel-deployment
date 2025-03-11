@@ -3,8 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import { CreateUserBody, UserService } from "../services/user";
 import { asyncHandler } from "../utils/asyncHandler";
 import { handleError, CustomError } from "../utils/errors";
-import { sendJsonResponse } from "../utils/sendSuccessResponse";
-
+import { sendJsonResponse } from "../utils/send-success-response";
 
 export class UserController {
   private userService: UserService;
@@ -28,10 +27,7 @@ export class UserController {
 
       const result = await this.userService.validateUsername(username);
 
-      return res.status(StatusCodes.OK).json({
-        status: StatusCodes.OK,
-        message: result.message,
-      });
+      return sendJsonResponse(res, StatusCodes.OK, result);
     } catch (error) {
       return handleError(res, error as Error | CustomError);
     }
@@ -51,24 +47,21 @@ export class UserController {
       }
       const { profile, wallet } = await this.userService.createUser(userData);
 
-      return sendJsonResponse(
-        res, 
-        StatusCodes.CREATED,
-        {
-          profile: {
-            id: profile.id,
-            username: profile.username,
-            bio: profile.bio,
-            avatar: profile.avatar,
-            email: profile.email,
-            createdAt: profile.createdAt,
-            updatedAt: profile.updatedAt,
-          },
-          wallet: {
-            address: wallet.address,
-            chain: wallet.chain,
-            isVerified: wallet.isVerified,
-          },
+      return sendJsonResponse(res, StatusCodes.CREATED, {
+        profile: {
+          id: profile.id,
+          username: profile.username,
+          bio: profile.bio,
+          avatar: profile.avatar,
+          email: profile.email,
+          createdAt: profile.createdAt,
+          updatedAt: profile.updatedAt,
+        },
+        wallet: {
+          address: wallet.address,
+          chain: wallet.chain,
+          isVerified: wallet.isVerified,
+        },
       });
     } catch (error: unknown) {
       return handleError(res, error as Error | CustomError);
@@ -94,10 +87,7 @@ export class UserController {
         throw CustomError.NotFound("User not found");
       }
 
-      return res.status(StatusCodes.OK).json({
-        status: StatusCodes.OK,
-        data: userProfile,
-      });
+      return sendJsonResponse(res, StatusCodes.OK, { userProfile });
     } catch (error: unknown) {
       return handleError(res, error as Error | CustomError);
     }

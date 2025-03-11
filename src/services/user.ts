@@ -1,6 +1,6 @@
 import { Chain, Web3Account as PrismaWeb3Account, User } from "@prisma/client";
 import axios from "axios";
-import { UserRepository } from "../repositories/userRepository";
+import { UserRepository } from "../repositories/user-repository";
 import { UserProfile } from "../types";
 import { CustomError } from "../utils/errors";
 

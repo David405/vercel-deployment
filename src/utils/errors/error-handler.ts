@@ -10,7 +10,7 @@ function sendCustomErrorResponse(
 }
 
 export function handleError(res: Response, error: Error | CustomError) {
-  console.error("Error:", error.message,   error.stack);
+  console.error("Error:", error.message, error.stack);
 
   if (error.name !== "CustomError") {
     error = CustomError.InternalServerError(error.message)
