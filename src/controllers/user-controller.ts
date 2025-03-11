@@ -2,7 +2,8 @@ import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { CreateUserBody, UserService } from "../services/user";
 import { asyncHandler } from "../utils/asyncHandler";
-import { getErrorDetails, sendErrorResponse } from "../utils/sendErrorResponse";
+import { handleError, CustomError } from "../utils/errors";
+
 
 export class UserController {
   private userService: UserService;
@@ -20,23 +21,20 @@ export class UserController {
     try {
       const { username } = req.params;
 
+      throw Error("This is a random error");
+
       if (!username) {
-        return sendErrorResponse(
-          res,
-          StatusCodes.BAD_REQUEST,
-          "Username is required"
-        );
+        throw CustomError.BadRequest("Username is required in request params");
       }
 
       const result = await this.userService.validateUsername(username);
 
       return res.status(StatusCodes.OK).json({
-        success: result.valid,
+        status: StatusCodes.OK,
         message: result.message,
       });
-    } catch (error: unknown) {
-      const { statusCode, message, stack } = getErrorDetails(error);
-      return sendErrorResponse(res, statusCode, message, stack);
+    } catch (error) {
+      return handleError(res, error as Error | CustomError);
     }
   });
 
@@ -50,11 +48,7 @@ export class UserController {
       const userData: CreateUserBody = req.body;
 
       if (!userData || Object.keys(userData).length === 0) {
-        return sendErrorResponse(
-          res,
-          StatusCodes.BAD_REQUEST,
-          "User data is required"
-        );
+        throw CustomError.BadRequest("User data is required in request body");
       }
       const { profile, wallet } = await this.userService.createUser(userData);
 
@@ -78,8 +72,7 @@ export class UserController {
         },
       });
     } catch (error: unknown) {
-      const { statusCode, message, stack } = getErrorDetails(error);
-      return sendErrorResponse(res, statusCode, message, stack);
+      return handleError(res, error as Error | CustomError);
     }
   });
 
@@ -93,26 +86,21 @@ export class UserController {
       const { username } = req.params;
 
       if (!username) {
-        return sendErrorResponse(
-          res,
-          StatusCodes.BAD_REQUEST,
-          "Username is required"
-        );
+        throw CustomError.BadRequest("Username is required in request params");
       }
 
       const userProfile = await this.userService.getUserProfile(username);
 
       if (!userProfile) {
-        return sendErrorResponse(res, StatusCodes.NOT_FOUND, "User not found");
+        throw CustomError.NotFound("User not found");
       }
 
-      return res.status(200).json({
-        success: true,
+      return res.status(StatusCodes.OK).json({
+        status: StatusCodes.OK,
         data: userProfile,
       });
     } catch (error: unknown) {
-      const { statusCode, message, stack } = getErrorDetails(error);
-      return sendErrorResponse(res, statusCode, message, stack);
+      return handleError(res, error as Error | CustomError);
     }
   });
 }

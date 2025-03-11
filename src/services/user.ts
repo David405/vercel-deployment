@@ -2,7 +2,7 @@ import { Chain, Web3Account as PrismaWeb3Account, User } from "@prisma/client";
 import axios from "axios";
 import { UserRepository } from "../repositories/userRepository";
 import { UserProfile } from "../types";
-import CustomError from "../utils/error";
+import { CustomError } from "../utils/errors";
 
 export type account = {
   address: string;
@@ -50,25 +50,25 @@ export class UserService {
   ): Promise<{ valid: boolean; message: string }> {
     // Check if username is empty
     if (username.length <= 0) {
-      throw CustomError.BadRequest("Username is required");
+      throw CustomError.BadRequest("Invalid Username", "Username is required");
     }
 
     // Check if username is too long
     if (username.length > 20) {
-      throw CustomError.BadRequest("Username is too long");
+      throw CustomError.BadRequest("Invalid Username", "Username is too long");
     }
 
     // Check if username is too short or too long
     const CHECK_USERNAME_LENGTH_AND_CHARACTERS = /^[a-zA-Z0-9_]{3,20}$/;
     if (!CHECK_USERNAME_LENGTH_AND_CHARACTERS.test(username)) {
-      throw CustomError.BadRequest("Invalid characters in username");
+      throw CustomError.BadRequest("Invalid Username", "Invalid characters in username");
     }
 
     // Check if username contains banned words
     // TODO: Check if username contains banned words
     const bannedWords: string[] = []; // This should be populated from a configuration or database
     if (bannedWords.some((word) => username.toLowerCase().includes(word))) {
-      throw CustomError.BadRequest("Username contains banned words");
+      throw CustomError.BadRequest("Invalid Username", "Username contains banned words");
     }
 
     // Check if username already exists
@@ -76,7 +76,7 @@ export class UserService {
     if (!existingUser) {
       return { valid: true, message: "Username is available" };
     } else {
-      throw CustomError.BadRequest("Username is already taken");
+      throw CustomError.BadRequest("Invalid Username", "Username is already taken");
     }
   }
 
