@@ -1,10 +1,8 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
+import { z } from "zod";
 import { CreateUserBody, UserService } from "../services/user";
-import { asyncHandler } from "../utils/asyncHandler";
-import { handleError, CustomError } from "../utils/errors";
-import { sendJsonResponse } from "../utils/sendJsonResponse";
-import { z, ZodSchema } from "zod";
+import { asyncHandler, customRequestHandler } from "../utils/requests.utils";
 
 const usernameRequestSchema = z.object({
   username: z
@@ -28,51 +26,6 @@ const createUserRequestSchema = z.object({
   message: z.string(),
   signature: z.string(),
 });
-
-/**
- * Validates request params based on a Zod schema
- * @param req Express request object
- * @param schema Zod schema for validation
- * @returns Validated data as type T
- */
-export function validateRequestBasedOnType<T>(
-  req: Request,
-  source: "params" | "body" | "query",
-  schema: ZodSchema<T>
-): void {
-  const objectToValidate = req[source];
-
-  const validationResult = schema.safeParse(objectToValidate);
-
-  if (!validationResult.success) {
-    throw CustomError.BadRequest(
-      "Invalid request parameters",
-      validationResult.error.errors[0].message
-    );
-  }
-}
-
-async function customRequestHandler<T>(
-  req: Request,
-  res: Response,
-  successCode: StatusCodes,
-  validation:
-    | { source: "params" | "body" | "query"; schema: ZodSchema<T> }
-    | undefined,
-  handlerFunction: (req: Request) => Promise<Record<string, unknown>>
-) {
-  try {
-    if (validation) {
-      validateRequestBasedOnType<T>(req, validation.source, validation.schema);
-    }
-
-    const result = await handlerFunction(req);
-
-    return sendJsonResponse(res, successCode, result);
-  } catch (error) {
-    return handleError(res, error as Error | CustomError);
-  }
-}
 
 export class UserController {
   private userService: UserService;
