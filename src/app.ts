@@ -1,13 +1,12 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import session from 'express-session';
 import { PrismaClient } from "@prisma/client";
-import csrf from "csurf";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import csrf from "csurf";
+import dotenv from "dotenv";
+import express from "express";
+import session from 'express-session';
 import { readdirSync } from "fs";
-import { join } from "path";
-import { errorHandler } from "./utils/errorHandler";
+import { errorHandler } from "./utils/errors";
 
 dotenv.config();
 
