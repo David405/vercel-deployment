@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { CreateUserBody, UserService } from "../services/user";
 import { asyncHandler } from "../utils/asyncHandler";
 import { handleError, CustomError } from "../utils/errors";
 import { sendJsonResponse } from "../utils/send-success-response";
+import { CreateUserBody, UserService } from "../services";
 
 export class UserController {
   private userService: UserService;
