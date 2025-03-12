@@ -1,4 +1,4 @@
 export * from "./auth";
 export * from "./feed";
 export * from "./social";
-export * from "./user";
+export * from "./user.services";
