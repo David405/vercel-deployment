@@ -91,7 +91,7 @@ export class UserService {
     const web3AccountData = {
       address: userData.account.address,
       chain: userData.account.chainId as Chain,
-      isVerified: false,
+      isVerified: true,
     };
 
     // Create the user and web3 account
