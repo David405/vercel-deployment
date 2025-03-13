@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
-import { prisma } from "../utils/prismaUtils";
+import prisma from '../config/database';
 import { getUserAndCheckFollowingStatus } from "../utils/validators";
 
 export const followUser = asyncHandler(

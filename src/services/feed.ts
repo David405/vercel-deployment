@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
-import { prisma } from "../utils/prismaUtils";
+import prisma from '../config/database';
 import { OnchainActivity, Prisma, Chain } from "@prisma/client";
 import { ActivityMetadata, ActivityType, Post} from "../types";
 import { validateOnChainActivity } from "../utils/validators";

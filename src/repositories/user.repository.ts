@@ -5,7 +5,7 @@ import {
   User,
   Web3Account,
 } from "@prisma/client";
-import { prisma } from "../utils/prismaUtils";
+import prisma from "../config/database";
 
 export class UserRepository {
   private prisma: PrismaClient;
