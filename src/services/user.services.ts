@@ -1,6 +1,6 @@
 import { Chain, Web3Account as PrismaWeb3Account, User } from "@prisma/client";
 import axios from "axios";
-import { UserRepository } from "../repositories/user-repository";
+import { UserRepository } from "../repositories/user";
 import { UserProfile } from "../types";
 import { CustomError } from "../utils/errors";
 
@@ -31,6 +31,11 @@ export interface ThirdPartyCreateUserBody {
   signature: string;
 }
 
+export interface IValidationResponse {
+  valid: boolean;
+  message: string;
+}
+
 export type CreateUserBody = TurnkeyCreateUserBody | ThirdPartyCreateUserBody;
 
 export class UserService {
@@ -38,121 +43,6 @@ export class UserService {
 
   constructor() {
     this.userRepository = new UserRepository();
-  }
-
-  /**
-   * Validates if a username is available
-   * @param username The username to validate
-   * @returns Object indicating validity and a message
-   */
-  async validateUsername(
-    username: string
-  ): Promise<{ valid: boolean; message: string }> {
-    // Check if username is empty
-    if (username.length <= 0) {
-      throw CustomError.BadRequest("Invalid Username", "Username is required");
-    }
-
-    // Check if username is too long
-    if (username.length > 20) {
-      throw CustomError.BadRequest("Invalid Username", "Username is too long");
-    }
-
-    // Check if username is too short or too long
-    const CHECK_USERNAME_LENGTH_AND_CHARACTERS = /^[a-zA-Z0-9_]{3,20}$/;
-    if (!CHECK_USERNAME_LENGTH_AND_CHARACTERS.test(username)) {
-      throw CustomError.BadRequest(
-        "Invalid Username",
-        "Invalid characters in username"
-      );
-    }
-
-    // Check if username contains banned words
-    // TODO: Check if username contains banned words
-    const bannedWords: string[] = []; // This should be populated from a configuration or database
-    if (bannedWords.some((word) => username.toLowerCase().includes(word))) {
-      throw CustomError.BadRequest(
-        "Invalid Username",
-        "Username contains banned words"
-      );
-    }
-
-    // Check if username already exists
-    const existingUser = await this.userRepository.findUserByUsername(username);
-    if (!existingUser) {
-      return { valid: true, message: "Username is available" };
-    } else {
-      throw CustomError.BadRequest(
-        "Invalid Username",
-        "Username is already taken"
-      );
-    }
-  }
-
-  /**
-   * Validates an email address
-   * @param email The email to validate
-   * @returns Object indicating validity and a message
-   */
-  async validateEmail(
-    email: string
-  ): Promise<{ valid: boolean; message: string }> {
-    // Check if email is empty
-    if (!email || email.trim().length === 0) {
-      throw CustomError.BadRequest("Email is required");
-    }
-
-    // Validate email format
-    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!EMAIL_REGEX.test(email)) {
-      throw CustomError.BadRequest("Invalid email format");
-    }
-
-    // Check if email is already registered
-    const existingUser = await this.userRepository.findUserByEmail(email);
-    if (existingUser) {
-      throw CustomError.BadRequest("Email is already taken");
-    }
-
-    return { valid: true, message: "Email is available" };
-  }
-
-  async validateAddress({
-    address,
-    chainId,
-  }: {
-    address: string;
-    chainId: string;
-  }): Promise<{ valid: boolean; message: string }> {
-    if (!address || !chainId) {
-      throw CustomError.BadRequest("Address and Chain ID are required");
-    }
-
-    const existingUser = await this.userRepository.findUserByAddress(address);
-    if (existingUser) {
-      throw CustomError.BadRequest("Address already exists");
-    }
-
-    const apiKey = process.env.ADAMIK_API_KEY;
-    if (!apiKey) {
-      throw CustomError.InternalServerError("Adamik API key is missing");
-    }
-
-    const response = await axios.post(
-      `https://api.adamik.io/api/${chainId}/address/validate`,
-      { address },
-      {
-        headers: {
-          Authorization: apiKey,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (response.data?.valid) {
-      return { valid: true, message: "Address is valid" };
-    }
-    return { valid: false, message: "Address is invalid" };
   }
 
   /**
@@ -206,7 +96,7 @@ export class UserService {
     const web3AccountData = {
       address: userData.account.address,
       chain: userData.account.chainId as Chain,
-      isVerified: false,
+      isVerified: true,
     };
 
     // Create the user and web3 account
@@ -247,5 +137,123 @@ export class UserService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  /**
+   * Validates if a username is available
+   * @param username The username to validate
+   * @returns Object indicating validity and a message
+   */
+  async validateUsername(username: string): Promise<IValidationResponse> {
+    // Check if username is empty
+    if (username.length <= 0) {
+      throw CustomError.BadRequest("Invalid Username", "Username is required");
+    }
+
+    // Check if username is too long
+    if (username.length > 20) {
+      throw CustomError.BadRequest("Invalid Username", "Username is too long");
+    }
+
+    // Check if username is too short or too long
+    const CHECK_USERNAME_LENGTH_AND_CHARACTERS = /^[a-zA-Z0-9_]{3,20}$/;
+    if (!CHECK_USERNAME_LENGTH_AND_CHARACTERS.test(username)) {
+      throw CustomError.BadRequest(
+        "Invalid Username",
+        "Invalid characters in username"
+      );
+    }
+
+    // Check if username contains banned words
+    // TODO: Check if username contains banned words
+    const bannedWords: string[] = []; // This should be populated from a configuration or database
+    if (bannedWords.some((word) => username.toLowerCase().includes(word))) {
+      throw CustomError.BadRequest(
+        "Invalid Username",
+        "Username contains banned words"
+      );
+    }
+
+    // Check if username already exists
+    const existingUser = await this.userRepository.findUserByUsername(username);
+    if (!existingUser) {
+      return { valid: true, message: "Username is available" };
+    } else {
+      throw CustomError.BadRequest(
+        "Invalid Username",
+        "Username is already taken"
+      );
+    }
+  }
+
+  /**
+   * Validates an email address
+   * @param email The email to validate
+   * @returns Object indicating validity and a message
+   */
+  async validateEmail(email: string): Promise<IValidationResponse> {
+    // Check if email is empty
+    if (!email || email.trim().length === 0) {
+      throw CustomError.BadRequest("Invalid Email", "Email is required");
+    }
+
+    // Validate email format
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_REGEX.test(email)) {
+      throw CustomError.BadRequest("Invalid Email", "Invalid email format");
+    }
+
+    // Check if email is already registered
+    const existingUser = await this.userRepository.findUserByEmail(email);
+    if (existingUser) {
+      throw CustomError.BadRequest("Invalid Email", "Email is already taken");
+    }
+
+    return { valid: true, message: "Email is available" };
+  }
+
+  async validateAddress({
+    address,
+    chainId,
+  }: {
+    address: string;
+    chainId: string;
+  }): Promise<{ valid: boolean; message: string }> {
+    if (!address || !chainId) {
+      throw CustomError.BadRequest(
+        "Invalid Address",
+        "Address and Chain ID are required"
+      );
+    }
+
+    const existingUser = await this.userRepository.findUserByAddress(address);
+    if (existingUser) {
+      throw CustomError.BadRequest("Invalid Address", "Address already exists");
+    }
+
+    const apiKey = process.env.ADAMIK_API_KEY;
+    if (!apiKey) {
+      throw CustomError.InternalServerError("Adamik API key is missing");
+    }
+
+    const response = await axios.post(
+      `https://api.adamik.io/api/${chainId}/address/validate`,
+      { address },
+      {
+        headers: {
+          Authorization: apiKey,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.data?.valid) {
+      return { valid: true, message: "Address is valid" };
+    } else {
+      throw CustomError.BadRequest(
+        "Invalid Address",
+        "Address not valid according to Adamik"
+      );
+    }
   }
 }

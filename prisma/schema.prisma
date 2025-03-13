@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model User {
@@ -78,8 +79,11 @@ model Post {
   createdAt         DateTime        @default(now())
   
   views             Int             @default(0) // Engagement tracker
-  dislikes          Dislike[]       // Reference to Dislike model
+  likesCount        Int             @default(0)
+  dislikesCount     Int             @default(0) 
+  commentsCount     Int             @default(0)
 
+  dislikes          Dislike[]       // Reference to Dislike model
   user              User            @relation(fields: [userId], references: [id])
   onchainActivity   OnchainActivity @relation(fields: [onchainActivityId], references: [id])
 
@@ -98,6 +102,9 @@ model Comment {
   createdAt DateTime @default(now())
 
   views     Int      @default(0) // Engagement
+  likesCount        Int             @default(0)
+  dislikesCount     Int             @default(0) 
+  
   likes     Like[]   // Reference to Like model
   dislikes  Dislike[] // Reference to Dislike model
 

@@ -1,6 +1,6 @@
 import { Chain, PrismaClient, User } from "@prisma/client"
 import axios from "axios";
-import { account } from "../services/user";
+import { account } from "../services/user.services";
 import { ActivityMetadata, ActivityType, DepositMetadata, MintMetadata, SwapMetadata, UserProfile } from "../types";
 
 

@@ -33,14 +33,14 @@ export function validateRequestBasedOnType<T>(
   }
 }
 
-export async function customRequestHandler<T>(
+export async function customRequestHandler<T, R>(
   req: Request,
   res: Response,
   successCode: StatusCodes,
   validation:
     | { source: "params" | "body" | "query"; schema: ZodSchema<T> }
     | undefined,
-  handlerFunction: (req: Request) => Promise<Record<string, unknown>>
+  handlerFunction: (req: Request) => Promise<R>
 ) {
   try {
     if (validation) {

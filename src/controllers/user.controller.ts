@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { CreateUserBody, UserService } from "../services/user";
+import {
+  CreateUserBody,
+  IValidationResponse,
+  UserService,
+} from "../services/user.services";
 import { asyncHandler, customRequestHandler } from "../utils/requests.utils";
 
 const usernameRequestSchema = z.object({
