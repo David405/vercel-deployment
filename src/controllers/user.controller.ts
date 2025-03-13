@@ -4,6 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { handleError, CustomError } from "../utils/errors";
 import { CreateUserBody, UserService } from "../services";
 import { sendJsonResponse } from "../utils/sendJsonResponse";
+import { verifySignature } from "../utils/verifySignature";
 
 export class UserController {
   private userService: UserService;
@@ -45,6 +46,13 @@ export class UserController {
       if (!userData || Object.keys(userData).length === 0) {
         throw CustomError.BadRequest("User data is required in request body");
       }
+
+      const isValidSignature = await verifySignature(userData.message, userData.signature);
+
+      if (!isValidSignature) {
+        throw CustomError.BadRequest("Invalid signature");
+      }
+
       const { profile, wallet } = await this.userService.createUser(userData);
 
       return sendJsonResponse(res, StatusCodes.CREATED, {
