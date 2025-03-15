@@ -7,9 +7,8 @@ import {
   UserService,
 } from "../services/user.services";
 import { asyncHandler, customRequestHandler } from "../utils/requests.utils";
-import { handleError, CustomError } from "../utils/errors";
-import { sendJsonResponse } from "../utils/sendJsonResponse";
 import { verifySignature } from "../utils/verifySignature";
+import { CustomError } from "../utils/errors";
 
 const usernameRequestSchema = z.object({
   username: z
@@ -70,39 +69,17 @@ export class UserController {
       StatusCodes.CREATED,
       { source: "body", schema: createUserRequestSchema },
       async (req: Request) => {
+        const userData = req.body;
+        const isValidSignature = await verifySignature(userData.message, userData.signature);
+
+        if (!isValidSignature) {
+          throw CustomError.BadRequest("Invalid signature");
+        }
+        
         return await this.userService.createUser(req.body as CreateUserBody);
       }
     )
   );
-
-      const isValidSignature = await verifySignature(userData.message, userData.signature);
-
-      if (!isValidSignature) {
-        throw CustomError.BadRequest("Invalid signature");
-      }
-
-      const { profile, wallet } = await this.userService.createUser(userData);
-
-      return sendJsonResponse(res, StatusCodes.CREATED, {
-        profile: {
-          id: profile.id,
-          username: profile.username,
-          bio: profile.bio,
-          avatar: profile.avatar,
-          email: profile.email,
-          createdAt: profile.createdAt,
-          updatedAt: profile.updatedAt,
-        },
-        wallet: {
-          address: wallet.address,
-          chain: wallet.chain,
-          isVerified: wallet.isVerified,
-        },
-      });
-    } catch (error: unknown) {
-      return handleError(res, error as Error | CustomError);
-    }
-  });
 
   /**
    * Gets a user profile by username
