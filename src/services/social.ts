@@ -1,58 +1,56 @@
 import { NextFunction, Request, Response } from "express";
-import { asyncHandler } from "../utils/asyncHandler";
+import { asyncHandler } from "../utils/requests.utils";
 import { prisma } from "../utils/prismaUtils";
 import { getUserAndCheckFollowingStatus } from "../utils/validators";
 
-export const followUser = asyncHandler(
-  async (req: Request, res: Response) => {
-    try {
-      const { username } = req.params;
-      const currentUserId = req.user?.userId;
+export const followUser = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const { username } = req.params;
+    const currentUserId = req.user?.userId;
 
-      if (!currentUserId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
+    if (!currentUserId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
-      const userToFollow = await prisma.user.findUnique({
-        where: { username },
-      });
+    const userToFollow = await prisma.user.findUnique({
+      where: { username },
+    });
 
-      if (!userToFollow) {
-        return res.status(404).json({ message: "User not found" });
-      }
+    if (!userToFollow) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-      // Check if the current user is already following the user
-      const existingFollow = await prisma.follow.findUnique({
-        where: {
-          followerId_followingId: {
-            followerId: currentUserId,
-            followingId: userToFollow.id,
-          },
-        },
-      });
-
-      if (existingFollow) {
-        return res.status(400).json({ message: "Already following this user" });
-      }
-
-      // Create a new follow relationship
-      await prisma.follow.create({
-        data: {
+    // Check if the current user is already following the user
+    const existingFollow = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
           followerId: currentUserId,
           followingId: userToFollow.id,
         },
-      });
+      },
+    });
 
-      res.status(200).json({ message: `You are now following ${username}` });
-    } catch (error) {
-      console.log(error);
-      res.status(500).json({
-        message: "Error following the user",
-        error: error,
-      });
+    if (existingFollow) {
+      return res.status(400).json({ message: "Already following this user" });
     }
+
+    // Create a new follow relationship
+    await prisma.follow.create({
+      data: {
+        followerId: currentUserId,
+        followingId: userToFollow.id,
+      },
+    });
+
+    res.status(200).json({ message: `You are now following ${username}` });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "Error following the user",
+      error: error,
+    });
   }
-);
+});
 
 export const isFollowingUser = asyncHandler(
   async (req: Request, res: Response) => {
@@ -106,7 +104,10 @@ export const unfollowUser = asyncHandler(
       }
 
       // Use the helper function to check if the user is following and get user info
-      const { isFollowing, userToCheck } = await getUserAndCheckFollowingStatus(currentUserId, username);
+      const { isFollowing, userToCheck } = await getUserAndCheckFollowingStatus(
+        currentUserId,
+        username
+      );
 
       if (!isFollowing) {
         return res.status(400).json({ message: "You do not follow this user" });
@@ -154,14 +155,18 @@ export const getFollowers = asyncHandler(
         where: { followingId: user.id },
         select: {
           follower: {
-            select : {username : true, id : true , avatar:true ,email:true,bio:true,
-
-             }
+            select: {
+              username: true,
+              id: true,
+              avatar: true,
+              email: true,
+              bio: true,
+            },
           },
         },
       });
 
-      const followerUsers = followers.map(follow => follow.follower);
+      const followerUsers = followers.map((follow) => follow.follower);
       res.status(200).json({ followers: followerUsers });
     } catch (error) {
       console.log(error);
@@ -190,12 +195,18 @@ export const getFollowing = asyncHandler(
         where: { followerId: user.id },
         select: {
           following: {
-            select: { username: true, id: true, avatar: true, email: true , bio:true },
+            select: {
+              username: true,
+              id: true,
+              avatar: true,
+              email: true,
+              bio: true,
+            },
           },
         },
       });
 
-      const followingUsers = following.map(follow => follow.following);
+      const followingUsers = following.map((follow) => follow.following);
       res.status(200).json({ following: followingUsers });
     } catch (error) {
       console.log(error);
@@ -206,4 +217,3 @@ export const getFollowing = asyncHandler(
     }
   }
 );
-

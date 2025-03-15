@@ -1,10 +1,10 @@
 import { Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
-export function sendJsonResponse(
+export function sendJsonResponse<T>(
   res: Response,
   status: StatusCodes,
-  payload: Record<string, unknown>
+  payload: T
 ) {
   res.status(status).json({ data: payload });
 }

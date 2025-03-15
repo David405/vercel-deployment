@@ -31,6 +31,11 @@ export interface ThirdPartyCreateUserBody {
   signature: string;
 }
 
+export interface IValidationResponse {
+  valid: boolean;
+  message: string;
+}
+
 export type CreateUserBody = TurnkeyCreateUserBody | ThirdPartyCreateUserBody;
 
 export class UserService {
@@ -106,9 +111,11 @@ export class UserService {
    * @param username The username to lookup
    * @returns The formatted user profile or null if not found
    */
-  async getUserProfile(username: string): Promise<UserProfile | null> {
+  async getUserProfile(username: string): Promise<UserProfile> {
     const user = await this.userRepository.getUserByUsername(username);
-    if (!user) return null;
+    if (!user) {
+      throw CustomError.NotFound("User not found");
+    }
 
     return {
       id: user.id,
@@ -137,9 +144,7 @@ export class UserService {
    * @param username The username to validate
    * @returns Object indicating validity and a message
    */
-  async validateUsername(
-    username: string
-  ): Promise<{ valid: boolean; message: string }> {
+  async validateUsername(username: string): Promise<IValidationResponse> {
     // Check if username is empty
     if (username.length <= 0) {
       throw CustomError.BadRequest("Invalid Username", "Username is required");
@@ -186,30 +191,28 @@ export class UserService {
    * @param email The email to validate
    * @returns Object indicating validity and a message
    */
-  private async validateEmail(
-    email: string
-  ): Promise<{ valid: boolean; message: string }> {
+  async validateEmail(email: string): Promise<IValidationResponse> {
     // Check if email is empty
     if (!email || email.trim().length === 0) {
-      throw CustomError.BadRequest("Email is required");
+      throw CustomError.BadRequest("Invalid Email", "Email is required");
     }
 
     // Validate email format
     const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!EMAIL_REGEX.test(email)) {
-      throw CustomError.BadRequest("Invalid email format");
+      throw CustomError.BadRequest("Invalid Email", "Invalid email format");
     }
 
     // Check if email is already registered
     const existingUser = await this.userRepository.findUserByEmail(email);
     if (existingUser) {
-      throw CustomError.BadRequest("Email is already taken");
+      throw CustomError.BadRequest("Invalid Email", "Email is already taken");
     }
 
     return { valid: true, message: "Email is available" };
   }
 
-  private async validateAddress({
+  async validateAddress({
     address,
     chainId,
   }: {
@@ -217,12 +220,15 @@ export class UserService {
     chainId: string;
   }): Promise<{ valid: boolean; message: string }> {
     if (!address || !chainId) {
-      throw CustomError.BadRequest("Address and Chain ID are required");
+      throw CustomError.BadRequest(
+        "Invalid Address",
+        "Address and Chain ID are required"
+      );
     }
 
     const existingUser = await this.userRepository.findUserByAddress(address);
     if (existingUser) {
-      throw CustomError.BadRequest("Address already exists");
+      throw CustomError.BadRequest("Invalid Address", "Address already exists");
     }
 
     const apiKey = process.env.ADAMIK_API_KEY;
@@ -243,7 +249,11 @@ export class UserService {
 
     if (response.data?.valid) {
       return { valid: true, message: "Address is valid" };
+    } else {
+      throw CustomError.BadRequest(
+        "Invalid Address",
+        "Address not valid according to Adamik"
+      );
     }
-    return { valid: false, message: "Address is invalid" };
   }
 }
