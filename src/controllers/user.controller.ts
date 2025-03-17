@@ -21,7 +21,7 @@ const usernameRequestSchema = z.object({
 const createUserRequestSchema = z.object({
   type: z.enum(["turnkey", "third-party"]),
   username: z.string().min(1, "Username is required in request"),
-  email: z.string(),
+  email: z.string().optional(),
   bio: z.string().optional(),
   avatar: z.string().optional(),
   account: z.object({
@@ -67,7 +67,7 @@ export class UserController {
       req,
       res,
       StatusCodes.CREATED,
-      { source: "body", schema: createUserRequestSchema },
+      { source: "body", schema: createUserRequestSchema},
       async (req: Request) => {
         const userData = req.body;
         const isValidSignature = await verifySignature(userData.message, userData.signature);

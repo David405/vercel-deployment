@@ -1,8 +1,10 @@
 import { Chain, Web3Account as PrismaWeb3Account, User } from "@prisma/client";
 import axios from "axios";
-import { UserRepository } from "../repositories/user";
 import { UserProfile } from "../types";
 import { CustomError } from "../utils/errors";
+import { UserRepository } from "../repositories";
+import { formatSignature, getAddressFromMessage } from "../utils/helpers";
+import { createPublicClient, Hex, http } from "viem";
 
 export type account = {
   address: string;
@@ -81,6 +83,44 @@ export class UserService {
       throw new Error("Invalid chain parameter");
     }
 
+    // Validate message and signature
+    if (!userData.message || typeof userData.message !== "string") {
+      throw CustomError.BadRequest(
+        "Invalid message",
+        "Missing or invalid message"
+      );
+    }
+
+    if (!userData.signature || typeof userData.signature !== "string") {
+      throw CustomError.BadRequest(
+        "Invalid signature",
+        "Missing or invalid signature"
+      );
+    }
+
+    const extractedAddress = getAddressFromMessage(userData.message);
+
+    const projectId = process.env.PROJECT_ID;
+
+    const publicClient = createPublicClient({
+      transport: http(
+        `https://rpc.walletconnect.org/v1/?chainId=${userData.account.chainId}&projectId=${projectId}`
+      ),
+    });
+
+    const formattedAddress = `0x${extractedAddress}` as Hex;
+    const formattedSignature = formatSignature(userData.signature);
+
+    const isValid = await publicClient.verifyMessage({
+      message: userData.message,
+      address: formattedAddress,
+      signature: formattedSignature,
+    });
+
+    if (!isValid) {
+      throw CustomError.BadRequest("Invalid signature");
+    }
+
     // Prepare user data
     const userDataForRepo = {
       username: userData.username,
@@ -99,11 +139,12 @@ export class UserService {
       isVerified: true,
     };
 
-    // Create the user and web3 account
-    return await this.userRepository.createUser(
+    const newUser = await this.userRepository.createUser(
       userDataForRepo,
       web3AccountData
     );
+    
+    return newUser;
   }
 
   /**
