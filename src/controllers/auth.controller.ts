@@ -1,9 +1,24 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { asyncHandler } from "../utils/asyncHandler";
-import { handleError, CustomError } from "../utils/errors";
-import { AuthService, CreateUserBody } from "../services";
-import { sendJsonResponse } from "../utils/sendJsonResponse";
+import { z } from "zod";
+import { AuthService } from "../services";
+import { asyncHandler, customRequestHandler } from "../utils/requests.utils";
+
+const accountAddressRequestSchema = z.object({
+  address: z
+    .string({
+      required_error: "Address is required in request",
+    })
+    .min(1, "Address is required in request"),
+  chainId: z.string(),
+});
+
+const verifyAndLoginSchema = z.object({
+  message: z.string().min(1, "Message is required"),
+  signature: z.string().min(1, "Signature is required"),
+  address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
+  chain: z.string().min(1, "Chain is required"),
+});
 
 export class AuthController {
   private authService: AuthService;
@@ -11,53 +26,64 @@ export class AuthController {
   constructor() {
     this.authService = new AuthService();
   }
+
   /**
    * Checks if a web3 account address exists
    * @param req Express request object
    * @param res Express response object
    */
-  checkAccountAddress = asyncHandler(async (req: Request, res: Response) => {
-    try {
-      const { address, chainId } = req.query as {
-        address?: string;
-        chainId?: string;
-      };
-
-      if (!address || !chainId) {
-        throw CustomError.BadRequest("Address and Chain ID are required");
+  checkAccountAddress = asyncHandler(async (req: Request, res: Response) =>
+    customRequestHandler(
+      req,
+      res,
+      StatusCodes.OK,
+      { source: "query", schema: accountAddressRequestSchema },
+      async (req) => {
+        const { address, chainId } = req.query as {
+          address: string;
+          chainId: string;
+        };
+        return await this.authService.checkAccountAddress({
+          address,
+          chainId,
+        });
       }
+    )
+  );
 
-      const result = await this.authService.checkAccountAddress({
-        address,
-        chainId,
-      });
-      return sendJsonResponse(res, StatusCodes.OK, result);
-    } catch (error) {
-      return handleError(res, error as Error | CustomError);
-    }
-  });
+  /**
+   * Generates a nonce for authentication
+   * @param req Express request object
+   * @param res Express response object
+   */
+  generateNonce = asyncHandler(async (req: Request, res: Response) =>
+    customRequestHandler(req, res, StatusCodes.OK, undefined, async () => {
+      return await this.authService.generateNonce();
+    })
+  );
 
-  generateNonce = asyncHandler(async (req: Request, res: Response) => {
-    try {
-      const nonce = await this.authService.generateNonce();
-      return sendJsonResponse(res, StatusCodes.OK, nonce);
-    } catch (error) {
-      return handleError(res, error as Error | CustomError);
-    }
-  });
-
-  verifyAndLogin = asyncHandler(async (req: Request, res: Response) => {
-    try {
-      const { message, signature, address, chain } = req.body;
-      const user = await this.authService.verifyAndLogin({
-        message,
-        signature,
-        address,
-        chain,
-      });
-      return sendJsonResponse(res, StatusCodes.OK, user);
-    } catch (error) {
-      return handleError(res, error as Error | CustomError);
-    }
-  });
+  /**
+   * Verifies a signature and logs in the user
+   * @param req Express request object containing message, signature, address, and chain in the body
+   * @param res Express response object
+   */
+  verifyAndLogin = (req: Request, res: Response) =>
+    customRequestHandler(
+      req,
+      res,
+      StatusCodes.OK,
+      {
+        source: "body",
+        schema: verifyAndLoginSchema, // Ensure you have a Zod schema for validation
+      },
+      async (req) => {
+        const { message, signature, address, chain } = req.body;
+        return await this.authService.verifyAndLogin({
+          message,
+          signature,
+          address,
+          chain,
+        });
+      }
+    );
 }
