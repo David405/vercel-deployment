@@ -3,6 +3,8 @@ import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { AuthService } from "../services";
 import { asyncHandler, customRequestHandler } from "../utils/requests.utils";
+import { verifySignature } from "../utils/verifySignature";
+import { CustomError } from "../utils/errors";
 
 const accountAddressRequestSchema = z.object({
   address: z
@@ -78,6 +80,10 @@ export class AuthController {
       },
       async (req) => {
         const { message, signature, address, chain } = req.body;
+        const isValidSignature = await verifySignature(message, signature);
+        if (!isValidSignature) {
+          throw CustomError.BadRequest("Invalid signature");
+        }
         return await this.authService.verifyAndLogin({
           message,
           signature,
