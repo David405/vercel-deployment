@@ -97,30 +97,6 @@ export class UserService {
         "Missing or invalid signature"
       );
     }
-
-    const extractedAddress = getAddressFromMessage(userData.message);
-
-    const projectId = process.env.PROJECT_ID;
-
-    const publicClient = createPublicClient({
-      transport: http(
-        `https://rpc.walletconnect.org/v1/?chainId=${userData.account.chainId}&projectId=${projectId}`
-      ),
-    });
-
-    const formattedAddress = `0x${extractedAddress}` as Hex;
-    const formattedSignature = formatSignature(userData.signature);
-
-    const isValid = await publicClient.verifyMessage({
-      message: userData.message,
-      address: formattedAddress,
-      signature: formattedSignature,
-    });
-
-    if (!isValid) {
-      throw CustomError.BadRequest("Invalid signature");
-    }
-
     // Prepare user data
     const userDataForRepo = {
       username: userData.username,
@@ -143,7 +119,7 @@ export class UserService {
       userDataForRepo,
       web3AccountData
     );
-    
+
     return newUser;
   }
 
