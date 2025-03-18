@@ -27,7 +27,7 @@ export function validateRequestBasedOnType<T>(
 
   if (!validationResult.success) {
     throw CustomError.BadRequest(
-      "Invalid request parameters",
+      `Invalid request ${source}`,
       validationResult.error.errors
         .map((err) => `${err.path.join(".")}: ${err.message}`)
         .join(", ")
