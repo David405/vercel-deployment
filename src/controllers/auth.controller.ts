@@ -1,26 +1,10 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
-import { z } from "zod";
 import { AuthService } from "../services";
+import { CustomError } from "../utils/errors";
 import { asyncHandler, customRequestHandler } from "../utils/requests.utils";
 import { verifySignature } from "../utils/verifySignature";
-import { CustomError } from "../utils/errors";
-
-const accountAddressRequestSchema = z.object({
-  address: z
-    .string({
-      required_error: "Address is required in request",
-    })
-    .min(1, "Address is required in request"),
-  chainId: z.string(),
-});
-
-const verifyAndLoginSchema = z.object({
-  message: z.string().min(1, "Message is required"),
-  signature: z.string().min(1, "Signature is required"),
-  address: z.string().regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
-  chain: z.string().min(1, "Chain is required"),
-});
+import { AuthValidation } from "../validations";
 
 export class AuthController {
   private authService: AuthService;
@@ -39,7 +23,7 @@ export class AuthController {
       req,
       res,
       StatusCodes.OK,
-      { source: "query", schema: accountAddressRequestSchema },
+      { source: "query", schema: AuthValidation.accountAddressRequestSchema },
       async (req) => {
         const { address, chainId } = req.query as {
           address: string;
@@ -76,7 +60,7 @@ export class AuthController {
       StatusCodes.OK,
       {
         source: "body",
-        schema: verifyAndLoginSchema, // Ensure you have a Zod schema for validation
+        schema: AuthValidation.verifyAndLoginSchema, // Ensure you have a Zod schema for validation
       },
       async (req) => {
         const { message, signature, address, chain } = req.body;
@@ -84,12 +68,29 @@ export class AuthController {
         if (!isValidSignature) {
           throw CustomError.BadRequest("Invalid signature");
         }
-        return await this.authService.verifyAndLogin({
+
+        const result = await this.authService.verifyAndLogin({
           message,
           signature,
           address,
           chain,
         });
+        // Set cookies for SIWE session and token
+        res.cookie("siweSession", result.siweSession, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 3600000,
+          sameSite: "strict",
+        });
+
+        res.cookie("token", result.token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 3600000,
+          sameSite: "strict",
+        });
+
+        return result.user;
       }
     );
 }

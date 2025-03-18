@@ -34,24 +34,6 @@ export class AuthService {
     accountData: Web3AccountData
   ): Promise<{ exists: boolean; ownedByUser: boolean }> {
     const { address, chainId } = accountData;
-
-    if (!address) {
-      throw CustomError.BadRequest(
-        "Invalid Account Address",
-        "Address is required"
-      );
-    }
-
-    if (
-      !chainId ||
-      !Object.values(ChainAllowed).includes(chainId as ChainAllowed)
-    ) {
-      throw CustomError.BadRequest(
-        "Invalid Chain ID",
-        "Supported chains: ethereum, solana"
-      );
-    }
-
     const chain = chainId as ChainAllowed;
 
     const account = await this.authRepository.findWeb3Account({
@@ -87,27 +69,6 @@ export class AuthService {
     address: string;
     chain: ChainAllowed;
   }): Promise<any> {
-    if (!address) {
-      throw CustomError.BadRequest(
-        "Invalid Account Address",
-        "Address is required"
-      );
-    }
-
-    if (!message || typeof message !== "string") {
-      throw CustomError.BadRequest(
-        "Invalid Data",
-        "Missing or invalid message"
-      );
-    }
-
-    if (!signature || typeof signature !== "string") {
-      throw CustomError.BadRequest(
-        "Invalid Data",
-        "Missing or invalid signature"
-      );
-    }
-
     const account = await this.authRepository.findWeb3Account({
       address,
       chain,

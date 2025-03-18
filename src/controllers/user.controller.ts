@@ -3,36 +3,12 @@ import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import {
   CreateUserBody,
-  IValidationResponse,
-  UserService,
+  UserService
 } from "../services/user.services";
+import { CustomError } from "../utils/errors";
 import { asyncHandler, customRequestHandler } from "../utils/requests.utils";
 import { verifySignature } from "../utils/verifySignature";
-import { CustomError } from "../utils/errors";
-
-const usernameRequestSchema = z.object({
-  username: z
-    .string({
-      required_error: "Username is required in request",
-    })
-    .min(1, "Username is required in request"),
-});
-
-const createUserRequestSchema = z.object({
-  type: z.enum(["turnkey", "third-party"]),
-  username: z.string().min(1, "Username is required in request"),
-  email: z.string().optional(),
-  bio: z.string().optional(),
-  avatar: z.string().optional(),
-  account: z.object({
-    address: z.string(),
-    nonce: z.string(),
-    chainId: z.string(),
-  }),
-  message: z.string(),
-  signature: z.string(),
-});
-
+import { UserValidation } from "../validations";
 export class UserController {
   private userService: UserService;
 
@@ -50,7 +26,7 @@ export class UserController {
       req,
       res,
       StatusCodes.OK,
-      { source: "params", schema: usernameRequestSchema },
+      { source: "params", schema: UserValidation.usernameSchema },
       async (req) => {
         return await this.userService.validateUsername(req.params.username);
       }
@@ -67,9 +43,10 @@ export class UserController {
       req,
       res,
       StatusCodes.CREATED,
-      { source: "body", schema: createUserRequestSchema},
+      { source: "body", schema: UserValidation.createUserSchema},
       async (req: Request) => {
         const userData = req.body;
+                
         const isValidSignature = await verifySignature(userData.message, userData.signature);
 
         if (!isValidSignature) {
@@ -91,7 +68,7 @@ export class UserController {
       req,
       res,
       StatusCodes.OK,
-      { source: "params", schema: usernameRequestSchema },
+      { source: "params", schema: UserValidation.usernameSchema },
       async (req: Request) => {
         return await this.userService.getUserProfile(req.params.username);
       }
