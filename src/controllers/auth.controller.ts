@@ -23,7 +23,7 @@ export class AuthController {
       req,
       res,
       StatusCodes.OK,
-      { querySchema: AuthValidation.accountAddressRequestSchema, type: 'validate' },
+      { querySchema: AuthValidation.accountAddressRequestSchema },
       async (req) => {
         const { address, chainId } = req.query as {
           address: string;
@@ -43,15 +43,9 @@ export class AuthController {
    * @param res Express response object
    */
   generateNonce = asyncHandler(async (req: Request, res: Response) =>
-    customRequestHandler(
-      req,
-      res,
-      StatusCodes.OK,
-      { type: "none" },
-      async () => {
-        return await this.authService.generateNonce();
-      }
-    )
+    customRequestHandler(req, res, StatusCodes.OK, undefined, async () => {
+      return await this.authService.generateNonce();
+    })
   );
 
   /**
@@ -66,7 +60,6 @@ export class AuthController {
       StatusCodes.OK,
       {
         bodySchema: AuthValidation.verifyAndLoginSchema, // Ensure you have a Zod schema for validation
-        type: 'validate'
       },
       async (req) => {
         const { message, signature, address, chain } = req.body;

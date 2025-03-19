@@ -43,8 +43,7 @@ export async function customRequestHandler<T, R>(
     paramSchema?: ZodSchema<T>;
     bodySchema?: ZodSchema<T>;
     querySchema?: ZodSchema<T>;
-    type: 'none' | 'validate'; // none for GET api where no params are required
-  },
+  } | undefined,
   handlerFunction: (req: Request) => Promise<R>
 ) {
   try {
