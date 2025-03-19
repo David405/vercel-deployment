@@ -23,7 +23,7 @@ export class AuthController {
       req,
       res,
       StatusCodes.OK,
-      { source: "query", schema: AuthValidation.accountAddressRequestSchema },
+      { querySchema: AuthValidation.accountAddressRequestSchema },
       async (req) => {
         const { address, chainId } = req.query as {
           address: string;
@@ -59,8 +59,7 @@ export class AuthController {
       res,
       StatusCodes.OK,
       {
-        source: "body",
-        schema: AuthValidation.verifyAndLoginSchema, // Ensure you have a Zod schema for validation
+        bodySchema: AuthValidation.verifyAndLoginSchema, // Ensure you have a Zod schema for validation
       },
       async (req) => {
         const { message, signature, address, chain } = req.body;
