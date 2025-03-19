@@ -39,14 +39,25 @@ export async function customRequestHandler<T, R>(
   req: Request,
   res: Response,
   successCode: StatusCodes,
-  validation:
-    | { source: "params" | "body" | "query"; schema: ZodSchema<T> }
-    | undefined,
+  validation: {
+    paramSchema?: ZodSchema<T>;
+    bodySchema?: ZodSchema<T>;
+    querySchema?: ZodSchema<T>;
+    type: 'none' | 'validate'; // none for GET api where no params are required
+  },
   handlerFunction: (req: Request) => Promise<R>
 ) {
   try {
-    if (validation) {
-      validateRequestBasedOnType<T>(req, validation.source, validation.schema);
+    if (validation?.paramSchema) {
+      validateRequestBasedOnType<T>(req, "params", validation.paramSchema);
+    }
+
+    if (validation?.bodySchema) {
+      validateRequestBasedOnType<T>(req, "body", validation.bodySchema);
+    }
+
+    if (validation?.querySchema) {
+      validateRequestBasedOnType<T>(req, "query", validation.querySchema);
     }
 
     const result = await handlerFunction(req);

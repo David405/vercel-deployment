@@ -1,10 +1,7 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import {
-  CreateUserBody,
-  UserService
-} from "../services/user.services";
+import { CreateUserBody, UserService } from "../services/user.services";
 import { CustomError } from "../utils/errors";
 import { asyncHandler, customRequestHandler } from "../utils/requests.utils";
 import { verifySignature } from "../utils/verifySignature";
@@ -26,7 +23,7 @@ export class UserController {
       req,
       res,
       StatusCodes.OK,
-      { source: "params", schema: UserValidation.usernameSchema },
+      { paramSchema: UserValidation.usernameSchema, type: 'validate' },
       async (req) => {
         return await this.userService.validateUsername(req.params.username);
       }
@@ -43,16 +40,19 @@ export class UserController {
       req,
       res,
       StatusCodes.CREATED,
-      { source: "body", schema: UserValidation.createUserSchema},
+      { bodySchema: UserValidation.createUserSchema, type: 'validate' },
       async (req: Request) => {
         const userData = req.body;
-                
-        const isValidSignature = await verifySignature(userData.message, userData.signature);
+
+        const isValidSignature = await verifySignature(
+          userData.message,
+          userData.signature
+        );
 
         if (!isValidSignature) {
           throw CustomError.BadRequest("Invalid signature");
         }
-        
+
         return await this.userService.createUser(req.body as CreateUserBody);
       }
     )
@@ -68,7 +68,7 @@ export class UserController {
       req,
       res,
       StatusCodes.OK,
-      { source: "params", schema: UserValidation.usernameSchema },
+      { paramSchema: UserValidation.usernameSchema, type: 'validate' },
       async (req: Request) => {
         return await this.userService.getUserProfile(req.params.username);
       }
