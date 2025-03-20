@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AuthValidation } from "./auth.validation";
+import { REGEX } from "../utils/constant";
 
 export class UserValidation {
   static usernameSchema = z.object({
@@ -9,7 +10,7 @@ export class UserValidation {
       .min(3, "Username must be at least 3 characters long")
       .max(20, "Username cannot be more than 20 characters long")
       .regex(
-        /^[a-zA-Z0-9-_]+$/,
+          REGEX.USERNAME,
         "Username can only contain letters, numbers, underscore, hyphen"
       )
       .transform((val) => val.toLowerCase()),
