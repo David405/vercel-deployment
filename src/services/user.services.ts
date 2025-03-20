@@ -5,6 +5,7 @@ import { UserProfile } from "../types";
 import { CustomError } from "../utils/errors";
 import { verifySignature } from "../utils/verifySignature";
 import { REGEX } from "../utils/constant";
+import { UserValidation } from "../validations";
 
 export type account = {
   address: string;
@@ -171,29 +172,23 @@ export class UserService {
    * @returns Object indicating validity and a message
    */
   async validateUsername(username: string): Promise<IValidationResponse> {
-    // Additional safeguard: re-check length in case of non-controller invocations.
-    if (username.length < 3 || username.length > 20) {
-      throw CustomError.BadRequest(
-        "Invalid Username",
-        "Username must be between 3 and 20 characters"
-      );
-    }
+    const validationResult = UserValidation.usernameSchema.safeParse({
+      username,
+    });
 
-    if (!REGEX.USERNAME.test(username)) {
-      throw CustomError.BadRequest(
-        "Invalid Username",
-        "Invalid characters in username"
-      );
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors
+        .map((err) => `${err.path.join(".")}: ${err.message}`)
+        .join(", ");
+      const message = `Invalid ${errors}`;
+      return { valid: false, message };
     }
 
     // Check if username contains banned words
     // TODO: Check if username contains banned words
     const bannedWords: string[] = []; // This should be populated from a configuration or database
     if (bannedWords.some((word) => username.includes(word))) {
-      throw CustomError.BadRequest(
-        "Invalid Username",
-        "Username contains banned words"
-      );
+      return { valid: false, message: "Username contains banned words" };
     }
 
     // Check if username already exists

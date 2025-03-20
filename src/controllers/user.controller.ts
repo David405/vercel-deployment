@@ -20,7 +20,7 @@ export class UserController {
       req,
       res,
       StatusCodes.OK,
-      { paramSchema: UserValidation.usernameSchema },
+      { paramSchema: UserValidation.validateUsernameParamsSchema },
       async (req) => {
         return await this.userService.validateUsername(req.params.username);
       }
@@ -37,7 +37,7 @@ export class UserController {
       req,
       res,
       StatusCodes.CREATED,
-      { bodySchema: UserValidation.createUserSchema},
+      { bodySchema: UserValidation.createUserSchema },
       async (req: Request) => {
         return await this.userService.createUser(req.body as CreateUserBody);
       }

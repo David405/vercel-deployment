@@ -3,6 +3,10 @@ import { AuthValidation } from "./auth.validation";
 import { REGEX } from "../utils/constant";
 
 export class UserValidation {
+  static validateUsernameParamsSchema = z.object({
+    username: z.string().trim(),
+  });
+
   static usernameSchema = z.object({
     username: z
       .string()
@@ -10,7 +14,7 @@ export class UserValidation {
       .min(3, "Username must be at least 3 characters long")
       .max(20, "Username cannot be more than 20 characters long")
       .regex(
-          REGEX.USERNAME,
+        REGEX.USERNAME,
         "Username can only contain letters, numbers, underscore, hyphen"
       )
       .transform((val) => val.toLowerCase()),
