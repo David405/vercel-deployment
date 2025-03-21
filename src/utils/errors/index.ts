@@ -1,2 +1,2 @@
-export * from "./custom-error.class";
-export * from "./error-handler.utils";
+export * from './custom-error.class';
+export * from './error-handler.utils';
