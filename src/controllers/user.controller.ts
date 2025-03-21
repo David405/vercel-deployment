@@ -74,4 +74,21 @@ export class UserController {
       }
     );
   });
+
+   /**
+   * Gets suggested users to follow
+   * @param req Express request object
+   * @param res Express response object
+   */
+   getSuggestedUsersToFollow = asyncHandler(async (req: Request, res: Response) => {
+    customRequestHandler(
+      req,
+      res,
+      StatusCodes.OK,
+      { paramSchema: UserValidation.suggestedUsersToFollowSchema },
+      async (req: Request) => {
+        return await this.userService.getSuggestedUsersToFollow(Number(req.params.count));
+      }
+    );
+  });
 }
