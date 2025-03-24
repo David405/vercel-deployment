@@ -174,10 +174,9 @@ export class UserRepository {
         id: string;
         username: string;
         avatar: string | null;
-        bio: string | null;
       }[]
     >`
-      SELECT u.id, u.username, u.avatar, u.bio
+      SELECT u.id, u.username, u.avatar
       FROM "User" u
       WHERE u.id != ${validatedInput.userId}
       AND NOT EXISTS (
@@ -188,7 +187,7 @@ export class UserRepository {
       LIMIT ${validatedInput.count};
     `;
   }
-  
+
   private suggestedUsersSchema = z.object({
     userId: z.string().uuid(),
     count: z.number().int().positive().max(50),
