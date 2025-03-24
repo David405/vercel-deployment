@@ -236,4 +236,8 @@ export class UserService {
       );
     }
   }
+
+  async getSuggestedUsersToFollow(userId: string, count: number): Promise<unknown>{
+    return await this.userRepository.findSuggestedUsers(userId, count);
+  }
 }

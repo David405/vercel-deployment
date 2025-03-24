@@ -87,7 +87,11 @@ export class UserController {
       StatusCodes.OK,
       { paramSchema: UserValidation.suggestedUsersToFollowSchema },
       async (req: Request) => {
-        return await this.userService.getSuggestedUsersToFollow(Number(req.params.count));
+        const userId = req.user?.userId;
+        if(!userId){
+          throw CustomError.Unauthorized("User is not authenticated.")
+        }
+        return await this.userService.getSuggestedUsersToFollow(userId, Number(req.params.count));
       }
     );
   });

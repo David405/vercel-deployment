@@ -6,6 +6,7 @@ import {
   Web3Account,
 } from "@prisma/client";
 import prisma from "../config/database";
+import { z } from "zod";
 
 export class UserRepository {
   private prisma: PrismaClient;
@@ -31,9 +32,7 @@ export class UserRepository {
    * @param email The email to validate
    * @returns Object indicating validity and a message
    */
-  async findUserByEmail(
-    email: string
-  ): Promise<unknown> {
+  async findUserByEmail(email: string): Promise<unknown> {
     return await this.prisma.user.findUnique({
       where: { email },
     });
@@ -53,7 +52,6 @@ export class UserRepository {
       },
     });
   }
-  
 
   /**
    * Creates a user and their associated web3 account
@@ -161,32 +159,38 @@ export class UserRepository {
   }
 
   /**
-   * Gets a user and checks follow status in one operation
-   * @param currentUserId The ID of the current user
-   * @param usernameToCheck The username to check follow status for
-   * @returns Object with user and follow status
+   * Finds suggested users for a given user, excluding already followed users.
+   * @param userId The ID of the current user for whom suggestions are being generated.
+   * @param count The number of suggested users to return.
+   * @returns A list of suggested users who are not yet followed by the given user.
    */
-  async getUserAndCheckFollowingStatus(
-    currentUserId: string,
-    usernameToCheck: string
-  ): Promise<{ isFollowing: boolean; userToCheck: User }> {
-    const userToCheck = await this.prisma.user.findUnique({
-      where: { username: usernameToCheck },
-    });
 
-    if (!userToCheck) {
-      throw new Error("User not found");
-    }
+  async findSuggestedUsers(userId: string, count: number) {
+    // Validate inputs to prevent sql injection
+    const validatedInput = this.suggestedUsersSchema.parse({ userId, count });
 
-    const existingFollow = await this.prisma.follow.findUnique({
-      where: {
-        followerId_followingId: {
-          followerId: currentUserId,
-          followingId: userToCheck.id,
-        },
-      },
-    });
-
-    return { isFollowing: !!existingFollow, userToCheck };
+    return await this.prisma.$queryRaw<
+      {
+        id: string;
+        username: string;
+        avatar: string | null;
+        bio: string | null;
+      }[]
+    >`
+      SELECT u.id, u.username, u.avatar, u.bio
+      FROM "User" u
+      WHERE u.id != ${validatedInput.userId}
+      AND NOT EXISTS (
+        SELECT 1 FROM "Follow" f
+        WHERE f."followerId" = ${validatedInput.userId} AND f."followingId" = u.id
+      )
+      ORDER BY RANDOM()
+      LIMIT ${validatedInput.count};
+    `;
   }
+  
+  private suggestedUsersSchema = z.object({
+    userId: z.string().uuid(),
+    count: z.number().int().positive().max(50),
+  });
 }
