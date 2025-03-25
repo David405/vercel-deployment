@@ -7,5 +7,6 @@ const router = Router();
 router.get("/users/validate-username/:username?", userController.validateUsername);
 router.post("/users/create", userController.create);
 router.get("/users/:username", authenticateUser, userController.getProfile);
+router.get("/users/metadata/:username", userController.getUsersMetadata);
 
 export default router;

@@ -23,7 +23,7 @@ const corsOptionsDelegate = (req: any, callback: any) => {
   let allowedOrigin;
 
   if (appEnv === "development") {
-    allowedOrigin = `http://localhost:${client}`;
+    allowedOrigin = [`http://localhost:${client}`/*, `http://127.0.0.1:5500` */]; //Added route for running frontend script
   } else if (appEnv === "staging") {
     allowedOrigin = [`http://localhost:${client}`, "https://bloom-web-server.onrender.com"];
   } else if (appEnv === "production") {
