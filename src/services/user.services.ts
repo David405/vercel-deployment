@@ -1,10 +1,12 @@
 import { Chain, Web3Account as PrismaWeb3Account, User } from "@prisma/client";
 import axios from "axios";
+import { UserRepository } from "../repositories";
 import { UserProfile } from "../types";
 import { CustomError } from "../utils/errors";
-import { UserRepository } from "../repositories";
-import { formatSignature, getAddressFromMessage } from "../utils/helpers";
-import { createPublicClient, Hex, http } from "viem";
+import { verifySignature } from "../utils/verifySignature";
+import { REGEX } from "../utils/constant";
+import { UserValidation } from "../validations";
+import { validateObjectOrThrowError } from "../utils/validateObject";
 
 export type account = {
   address: string;
@@ -54,49 +56,23 @@ export class UserService {
    */
   async createUser(
     userData: CreateUserBody
-  ): Promise<{ profile: User; wallet: PrismaWeb3Account }> { 
+  ): Promise<{ profile: User; wallet: PrismaWeb3Account }> {
     //Validate username
-    const validUser = await this.validateUsername(userData.username);
-    if (!validUser.valid) {
-      throw new Error(validUser.message);
+    validateObjectOrThrowError(
+      userData as unknown as Record<string, unknown>,
+      UserValidation.createUserSchema,
+      "Validation Error in createUser function"
+    );
+
+    // Verfiy signature
+    const isValidSignature = await verifySignature(
+      userData.message,
+      userData.signature
+    );
+    if (!isValidSignature) {
+      throw CustomError.BadRequest("Invalid signature");
     }
 
-    // Validate email for turnkey users
-    if (userData.type === "turnkey") {
-      const validEmail = await this.validateEmail(userData.email);
-      if (!validEmail.valid) {
-        throw new Error(validUser.message);
-      }
-    }
-
-    // Validate wallet address
-    const validAddress = await this.validateAddress(userData.account);
-    if (!validAddress.valid) {
-      throw new Error(validAddress.message);
-    }
-
-    // Validate chain ID
-    if (
-      userData.account.chainId !== "ethereum" &&
-      userData.account.chainId !== "solana"
-    ) {
-      throw new Error("Invalid chain parameter");
-    }
-
-    // Validate message and signature
-    if (!userData.message || typeof userData.message !== "string") {
-      throw CustomError.BadRequest(
-        "Invalid message",
-        "Missing or invalid message"
-      );
-    }
-
-    if (!userData.signature || typeof userData.signature !== "string") {
-      throw CustomError.BadRequest(
-        "Invalid signature",
-        "Missing or invalid signature"
-      );
-    }
     // Prepare user data
     const userDataForRepo = {
       username: userData.username,
@@ -162,26 +138,29 @@ export class UserService {
    * @returns Object indicating validity and a message
    */
   async validateUsername(username: string): Promise<IValidationResponse> {
+    try {
+      validateObjectOrThrowError(
+        { username },
+        UserValidation.usernameSchema,
+        "Validation Error in validateUsername function"
+      );
+    } catch (error) {
+      const validationError = error as { cause: string };
+      return { valid: false, message: validationError.cause };
+    }
+
     // Check if username contains banned words
     // TODO: Check if username contains banned words
     const bannedWords: string[] = []; // This should be populated from a configuration or database
     if (bannedWords.some((word) => username.includes(word))) {
-      throw CustomError.BadRequest(
-        "Invalid Username",
-        "Username contains banned words"
-      );
+      return { valid: false, message: "Username contains banned words" };
     }
 
     // Check if username already exists
     const existingUser = await this.userRepository.findUserByUsername(username);
-    if (!existingUser) {
-      return { valid: true, message: "Username is available" };
-    } else {
-      throw CustomError.BadRequest(
-        "Invalid Username",
-        "Username is already taken"
-      );
-    }
+    return existingUser
+      ? { valid: false, message: "Username is already taken" }
+      : { valid: true, message: "Username is available" };
   }
 
   /**
@@ -190,6 +169,15 @@ export class UserService {
    * @returns Object indicating validity and a message
    */
   async validateEmail(email: string): Promise<IValidationResponse> {
+    // Additional safeguard: re-check length in case of non-controller invocations.
+    if (!email || email.trim().length === 0) {
+      throw CustomError.BadRequest("Invalid Email", "Email is required");
+    }
+
+    // Validate email format
+    if (!REGEX.EMAIL.test(email)) {
+      throw CustomError.BadRequest("Invalid Email", "Invalid email format");
+    }
     // Check if email is already registered
     const existingUser = await this.userRepository.findUserByEmail(email);
     if (existingUser) {

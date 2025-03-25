@@ -62,18 +62,7 @@ export class AuthController {
         bodySchema: AuthValidation.verifyAndLoginSchema, // Ensure you have a Zod schema for validation
       },
       async (req) => {
-        const { message, signature, address, chain } = req.body;
-        const isValidSignature = await verifySignature(message, signature);
-        if (!isValidSignature) {
-          throw CustomError.BadRequest("Invalid signature");
-        }
-
-        const result = await this.authService.verifyAndLogin({
-          message,
-          signature,
-          address,
-          chain,
-        });
+        const result = await this.authService.verifyAndLogin(req.body);
         // Set cookies for SIWE session and token
         res.cookie("siweSession", result.siweSession, {
           httpOnly: true,

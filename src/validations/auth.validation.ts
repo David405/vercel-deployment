@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { ChainAllowed } from "../services";
 
 export class AuthValidation {
   static accountAddressRequestSchema = z.object({
     address: z.string().trim().min(1, "Address is required"),
-    chainId: z.enum(["ethereum", "solana"]),
+    chainId: z.nativeEnum(ChainAllowed),
   });
 
   static siweSchema = z.object({
@@ -14,7 +15,7 @@ export class AuthValidation {
   static verifyAndLoginSchema = z
     .object({
       address: z.string().trim().min(1, "Address is required"),
-      chain: z.enum(["ethereum", "solana"]),
+      chain: z.nativeEnum(ChainAllowed),
     })
     .merge(AuthValidation.siweSchema);
 }
