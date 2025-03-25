@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { followUser, isFollowingUser, unfollowUser, getFollowers, getFollowing } from "../services/social";
 import { authenticateUser } from "../middleware/auth";
+import { userController } from "../controllers";
+
 
 const router = Router();
 
@@ -18,5 +20,9 @@ router.get("/users/:username/followers", authenticateUser, getFollowers);
 
 // Route to get the list of users a user is following
 router.get("/users/:username/following", authenticateUser, getFollowing);
+
+// Route to get the list of suggested followers
+router.get("/users/suggested/:count", authenticateUser, userController.getSuggestedUsersToFollow); //ToDo: Move this to social controller
+
 
 export default router;
