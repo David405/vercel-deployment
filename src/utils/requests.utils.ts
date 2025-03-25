@@ -3,6 +3,7 @@ import { ZodSchema } from "zod";
 import { CustomError, handleError } from "./errors";
 import { StatusCodes } from "http-status-codes";
 import { sendJsonResponse } from "./sendJsonResponse";
+import { validateObjectOrThrowError } from "./validateObject";
 
 /**
  * Async handler for Express routes.
@@ -21,29 +22,20 @@ export function validateRequestBasedOnType<T>(
   source: "params" | "body" | "query",
   schema: ZodSchema<T>
 ): void {
-  const objectToValidate = req[source];
-
-  const validationResult = schema.safeParse(objectToValidate);
-
-  if (!validationResult.success) {
-    throw CustomError.BadRequest(
-      `Invalid request ${source}`,
-      validationResult.error.errors
-        .map((err) => `${err.path.join(".")}: ${err.message}`)
-        .join(", ")
-    );
-  }
+  validateObjectOrThrowError(req[source], schema, `Invalid request ${source}`);
 }
 
 export async function customRequestHandler<T, R>(
   req: Request,
   res: Response,
   successCode: StatusCodes,
-  validation: {
-    paramSchema?: ZodSchema<T>;
-    bodySchema?: ZodSchema<T>;
-    querySchema?: ZodSchema<T>;
-  } | undefined,
+  validation:
+    | {
+        paramSchema?: ZodSchema<T>;
+        bodySchema?: ZodSchema<T>;
+        querySchema?: ZodSchema<T>;
+      }
+    | undefined,
   handlerFunction: (req: Request) => Promise<R>
 ) {
   try {

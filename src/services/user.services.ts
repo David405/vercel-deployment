@@ -6,6 +6,7 @@ import { CustomError } from "../utils/errors";
 import { verifySignature } from "../utils/verifySignature";
 import { REGEX } from "../utils/constant";
 import { UserValidation } from "../validations";
+import { validateObjectOrThrowError } from "../utils/validateObject";
 
 export type account = {
   address: string;
@@ -57,24 +58,11 @@ export class UserService {
     userData: CreateUserBody
   ): Promise<{ profile: User; wallet: PrismaWeb3Account }> {
     //Validate username
-    const validUser = await this.validateUsername(userData.username);
-    if (!validUser.valid) {
-      throw new Error(validUser.message);
-    }
-
-    // Validate email for turnkey users
-    if (userData.type === "turnkey") {
-      const validEmail = await this.validateEmail(userData.email);
-      if (!validEmail.valid) {
-        throw new Error(validUser.message);
-      }
-    }
-
-    // Validate wallet address
-    const validAddress = await this.validateAddress(userData.account);
-    if (!validAddress.valid) {
-      throw new Error(validAddress.message);
-    }
+    validateObjectOrThrowError(
+      userData as unknown as Record<string, unknown>,
+      UserValidation.createUserSchema,
+      "Validation Error in createUser function"
+    );
 
     // Verfiy signature
     const isValidSignature = await verifySignature(
@@ -85,28 +73,6 @@ export class UserService {
       throw CustomError.BadRequest("Invalid signature");
     }
 
-    // Validate chain ID
-    if (
-      userData.account.chainId !== "ethereum" &&
-      userData.account.chainId !== "solana"
-    ) {
-      throw CustomError.BadRequest("Invalid chain parameter");
-    }
-
-    // Validate message and signature
-    if (!userData.message || typeof userData.message !== "string") {
-      throw CustomError.BadRequest(
-        "Invalid message",
-        "Missing or invalid message"
-      );
-    }
-
-    if (!userData.signature || typeof userData.signature !== "string") {
-      throw CustomError.BadRequest(
-        "Invalid signature",
-        "Missing or invalid signature"
-      );
-    }
     // Prepare user data
     const userDataForRepo = {
       username: userData.username,
@@ -172,16 +138,15 @@ export class UserService {
    * @returns Object indicating validity and a message
    */
   async validateUsername(username: string): Promise<IValidationResponse> {
-    const validationResult = UserValidation.usernameSchema.safeParse({
-      username,
-    });
-
-    if (!validationResult.success) {
-      const errors = validationResult.error.errors
-        .map((err) => `${err.path.join(".")}: ${err.message}`)
-        .join(", ");
-      const message = `Invalid ${errors}`;
-      return { valid: false, message };
+    try {
+      validateObjectOrThrowError(
+        { username },
+        UserValidation.usernameSchema,
+        "Validation Error in validateUsername function"
+      );
+    } catch (error) {
+      const validationError = error as { cause: string };
+      return { valid: false, message: validationError.cause };
     }
 
     // Check if username contains banned words
