@@ -224,4 +224,24 @@ export class UserService {
       );
     }
   }
+
+  async getUsersMetadata(username: string): Promise<Partial<UserProfile>> {
+    const user = await this.userRepository.getUserByUsername(username);
+    if (!user) {
+      throw CustomError.NotFound("User not found");
+    }
+
+    return {
+      id: user.id,
+      username: user.username,
+      bio: user.bio ?? undefined,
+      avatar: user.avatar ?? undefined,
+      email: user.email ?? undefined,
+      socialAccounts:
+        user.socialAccounts?.map(({ platform, username }) => ({
+          platform,
+          username,
+        })) ?? [],
+    };
+  }
 }
