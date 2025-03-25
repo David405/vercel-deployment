@@ -3,13 +3,12 @@ import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 
 import { CustomError } from "../utils/errors";
-import {
-  getAddressFromMessage,
-  getChainIdFromMessage
-} from "../utils/helpers";
+import { getAddressFromMessage, getChainIdFromMessage } from "../utils/helpers";
 
 import { AuthRepository } from "../repositories";
-
+import { validateObjectOrThrowError } from "../utils/validateObject";
+import { verifySignature } from "../utils/verifySignature";
+import { AuthValidation } from "../validations";
 
 export type Web3AccountData = {
   address: string;
@@ -34,6 +33,13 @@ export class AuthService {
     accountData: Web3AccountData
   ): Promise<{ exists: boolean; ownedByUser: boolean }> {
     const { address, chainId } = accountData;
+
+    validateObjectOrThrowError(
+      { address, chainId },
+      AuthValidation.accountAddressRequestSchema,
+      `Validation error in checkAccountAddress function`
+    );
+
     const chain = chainId as ChainAllowed;
 
     const account = await this.authRepository.findWeb3Account({
@@ -69,6 +75,17 @@ export class AuthService {
     address: string;
     chain: ChainAllowed;
   }): Promise<any> {
+    validateObjectOrThrowError(
+      { address, chain, message, signature },
+      AuthValidation.verifyAndLoginSchema,
+      `Validation Error in verifyAndLogin function`
+    );
+
+    const isValidSignature = await verifySignature(message, signature);
+    if (!isValidSignature) {
+      throw CustomError.BadRequest("Invalid signature");
+    }
+
     const account = await this.authRepository.findWeb3Account({
       address,
       chain,
