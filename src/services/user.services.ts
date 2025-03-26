@@ -225,6 +225,12 @@ export class UserService {
     }
   }
 
+  async getSuggestedUsersToFollow(
+    userId: string,
+    count: number
+  ): Promise<unknown> {
+    return await this.userRepository.findSuggestedUsers(userId, count);
+  }
   async getUsersMetadata(username: string): Promise<Partial<UserProfile>> {
     const user = await this.userRepository.getUserByUsername(username);
     if (!user) {

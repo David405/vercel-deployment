@@ -44,4 +44,8 @@ export class UserValidation {
       message: "Email is required for 'turnkey' users",
       path: ["email"],
     });
+
+  static suggestedUsersToFollowSchema = z.object({
+    count: z.string().trim().min(1, "Count is required"),
+  });
 }
