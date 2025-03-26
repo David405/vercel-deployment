@@ -66,15 +66,27 @@ export class UserService {
     userData = validatedUserData;
 
     // Validate username
-    const isValidUsername = await this.validateUsername(userData.username);
-    if (!isValidUsername.valid) {
-      throw new Error(isValidUsername.message);
+    const usernameValidationResult = await this.validateUsername(
+      userData.username
+    );
+    if (!usernameValidationResult.valid) {
+      throw new Error(usernameValidationResult.message);
     }
 
     // Validate wallet address
-    const validAddress = await this.validateAddress(userData.account);
-    if (!validAddress.valid) {
-      throw new Error(validAddress.message);
+    const addressValidationResult = await this.validateAddress(
+      userData.account
+    );
+    if (!addressValidationResult.valid) {
+      throw new Error(addressValidationResult.message);
+    }
+
+    // Validate email
+    if (userData.type === "turnkey") {
+      const emailValidateResult = await this.validateEmail(userData.email);
+      if (!emailValidateResult.valid) {
+        throw new Error(emailValidateResult.message);
+      }
     }
 
     // Verfiy signature
