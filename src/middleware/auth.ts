@@ -2,13 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        userId: string;
-      };
-    }
-  }
+	namespace Express {
+		interface Request {
+			user?: {
+				userId: string;
+			};
+		}
+	}
 }
 
 export const authenticateUser = (
@@ -40,3 +40,4 @@ export const authenticateUser = (
     res.status(401).json({ error: 'Invalid token' });
   }
 };
+

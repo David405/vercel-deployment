@@ -12,16 +12,16 @@ import { validateObjectOrThrowError } from "./validateObject";
  * catches any errors thrown by fn and passes them to the next middleware.
  *  /** */
 
-export const asyncHandler =
-  (fn: any) => (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+export const asyncHandler = (fn: any) => (req: Request, res: Response, next: NextFunction) => {
+	Promise.resolve(fn(req, res, next)).catch(next);
+};
 
 export function validateRequestBasedOnType<T>(
-  req: Request,
-  source: "params" | "body" | "query",
-  schema: ZodSchema<T>
+	req: Request,
+	source: 'params' | 'body' | 'query',
+	schema: ZodSchema<T>
 ): void {
+
   validateObjectOrThrowError(req[source], schema, `Invalid request ${source}`);
 }
 
@@ -37,24 +37,25 @@ export async function customRequestHandler<T, R>(
       }
     | undefined,
   handlerFunction: (req: Request) => Promise<R>
+
 ) {
-  try {
-    if (validation?.paramSchema) {
-      validateRequestBasedOnType<T>(req, "params", validation.paramSchema);
-    }
+	try {
+		if (validation?.paramSchema) {
+			validateRequestBasedOnType<T>(req, 'params', validation.paramSchema);
+		}
 
-    if (validation?.bodySchema) {
-      validateRequestBasedOnType<T>(req, "body", validation.bodySchema);
-    }
+		if (validation?.bodySchema) {
+			validateRequestBasedOnType<T>(req, 'body', validation.bodySchema);
+		}
 
-    if (validation?.querySchema) {
-      validateRequestBasedOnType<T>(req, "query", validation.querySchema);
-    }
+		if (validation?.querySchema) {
+			validateRequestBasedOnType<T>(req, 'query', validation.querySchema);
+		}
 
-    const result = await handlerFunction(req);
+		const result = await handlerFunction(req);
 
-    return sendJsonResponse(res, successCode, result);
-  } catch (error) {
-    return handleError(res, error as Error | CustomError);
-  }
+		return sendJsonResponse(res, successCode, result);
+	} catch (error) {
+		return handleError(res, error as Error | CustomError);
+	}
 }

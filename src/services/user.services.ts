@@ -1,3 +1,4 @@
+
 import { Chain, Web3Account as PrismaWeb3Account, User } from "@prisma/client";
 import axios from "axios";
 import { UserRepository } from "../repositories";
@@ -9,40 +10,41 @@ import { UserValidation } from "../validations";
 import { validateObjectOrThrowError } from "../utils/validateObject";
 
 export type account = {
-  address: string;
-  nonce: string;
-  chainId: string;
+	address: string;
+	nonce: string;
+	chainId: string;
 };
 
 interface TurnkeyCreateUserBody {
-  type: "turnkey";
-  username: string;
-  email: string;
-  bio?: string;
-  avatar?: string;
-  account: account;
-  message: string;
-  signature: string;
+	type: 'turnkey';
+	username: string;
+	email: string;
+	bio?: string;
+	avatar?: string;
+	account: account;
+	message: string;
+	signature: string;
 }
 
 export interface ThirdPartyCreateUserBody {
-  type: "third-party";
-  username: string;
-  bio?: string;
-  avatar?: string;
-  account: account;
-  message: string;
-  signature: string;
+	type: 'third-party';
+	username: string;
+	bio?: string;
+	avatar?: string;
+	account: account;
+	message: string;
+	signature: string;
 }
 
 export interface IValidationResponse {
-  valid: boolean;
-  message: string;
+	valid: boolean;
+	message: string;
 }
 
 export type CreateUserBody = TurnkeyCreateUserBody | ThirdPartyCreateUserBody;
 
 export class UserService {
+
   private userRepository: UserRepository;
 
   constructor() {
