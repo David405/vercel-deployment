@@ -6,8 +6,9 @@ import {
 	getFollowers,
 	getFollowing
 } from '../services/social';
-import { authenticateUser } from '../middleware/auth';
+import { userController } from '../controllers';
 
+import { authenticateUser } from '../middleware/auth';
 
 const router = Router();
 
@@ -27,7 +28,6 @@ router.get('/users/:username/followers', authenticateUser, getFollowers);
 router.get('/users/:username/following', authenticateUser, getFollowing);
 
 // Route to get the list of suggested followers
-router.get("/users/suggested/:count", authenticateUser, userController.getSuggestedUsersToFollow); //ToDo: Move this to social controller
+router.get('/users/suggested/:count', authenticateUser, userController.getSuggestedUsersToFollow); //ToDo: Move this to social controller
 
 export default router;
-

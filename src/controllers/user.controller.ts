@@ -6,6 +6,7 @@ import { CustomError } from '../utils/errors';
 import { asyncHandler, customRequestHandler } from '../utils/requests.utils';
 import { verifySignature } from '../utils/verifySignature';
 import { UserValidation } from '../validations';
+
 export class UserController {
 	private userService: UserService;
 
@@ -74,23 +75,47 @@ export class UserController {
 			}
 		);
 	});
-}
+
+	/**
+	 * Gets suggested users to follow
+	 * @param req Express request object
+	 * @param res Express response object
+	 */
+	getSuggestedUsersToFollow = asyncHandler(async (req: Request, res: Response) => {
+		customRequestHandler(
+			req,
+			res,
+			StatusCodes.OK,
+			{ paramSchema: UserValidation.suggestedUsersToFollowSchema },
+			async (req: Request) => {
+				const userId = req.user?.userId;
+				if (!userId) {
+					throw CustomError.Unauthorized('User is not authenticated.');
+				}
+				return await this.userService.getSuggestedUsersToFollow(
+					userId,
+					Number(req.params.count)
+				);
+			}
+		);
+	});
+
+	/*
 
   /*
    * Gets user's metadata by username
    * @param req Express request object
    * @param res Express response object
    */
-  getUsersMetadata = asyncHandler(async (req: Request, res: Response) => {
-    customRequestHandler(
-      req,
-      res,
-      StatusCodes.OK,
-      { paramSchema: UserValidation.usernameSchema },
-      async (req: Request) => {
-        return await this.userService.getUsersMetadata(req.params.username);
-      }
-    );
-  });
+	getUsersMetadata = asyncHandler(async (req: Request, res: Response) => {
+		customRequestHandler(
+			req,
+			res,
+			StatusCodes.OK,
+			{ paramSchema: UserValidation.usernameSchema },
+			async (req: Request) => {
+				return await this.userService.getUsersMetadata(req.params.username);
+			}
+		);
+	});
 }
-
