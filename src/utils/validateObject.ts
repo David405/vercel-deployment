@@ -5,7 +5,7 @@ export function validateObjectOrThrowError(
   objectToValidate: Record<string, unknown>,
   schema: ZodSchema<unknown>,
   errorMessage: string
-): void {
+): any {
   const validationResult = schema.safeParse(objectToValidate);
 
   if (!validationResult.success) {
@@ -16,4 +16,6 @@ export function validateObjectOrThrowError(
         .join(", ")
     );
   }
+
+  return validationResult.data;
 }

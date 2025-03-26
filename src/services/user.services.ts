@@ -58,11 +58,24 @@ export class UserService {
     userData: CreateUserBody
   ): Promise<{ profile: User; wallet: PrismaWeb3Account }> {
     //Validate username
-    validateObjectOrThrowError(
+    const validatedUserData = validateObjectOrThrowError(
       userData as unknown as Record<string, unknown>,
       UserValidation.createUserSchema,
       "Validation Error in createUser function"
     );
+    userData = validatedUserData;
+
+    // Validate username
+    const isValidUsername = await this.validateUsername(userData.username);
+    if (!isValidUsername.valid) {
+      throw new Error(isValidUsername.message);
+    }
+
+    // Validate wallet address
+    const validAddress = await this.validateAddress(userData.account);
+    if (!validAddress.valid) {
+      throw new Error(validAddress.message);
+    }
 
     // Verfiy signature
     const isValidSignature = await verifySignature(
@@ -139,11 +152,12 @@ export class UserService {
    */
   async validateUsername(username: string): Promise<IValidationResponse> {
     try {
-      validateObjectOrThrowError(
+      const validatedData = validateObjectOrThrowError(
         { username },
         UserValidation.usernameSchema,
         "Validation Error in validateUsername function"
       );
+      username = validatedData.username;
     } catch (error) {
       const validationError = error as { cause: string };
       return { valid: false, message: validationError.cause };
@@ -155,7 +169,6 @@ export class UserService {
     if (bannedWords.some((word) => username.includes(word))) {
       return { valid: false, message: "Username contains banned words" };
     }
-
     // Check if username already exists
     const existingUser = await this.userRepository.findUserByUsername(username);
     return existingUser
@@ -226,6 +239,13 @@ export class UserService {
   }
 
   async getUsersMetadata(username: string): Promise<Partial<UserProfile>> {
+    const validatedData = validateObjectOrThrowError(
+      { username },
+      UserValidation.usernameSchema,
+      "Validation Error in validateUsername function"
+    );
+    username = validatedData.username;
+
     const user = await this.userRepository.getUserByUsername(username);
     if (!user) {
       throw CustomError.NotFound("User not found");
