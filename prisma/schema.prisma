@@ -66,8 +66,7 @@ model Follow {
   following     User     @relation("UserFollowing", fields: [followingId], references: [id])
 
   @@unique([followerId, followingId])
-  @@index([followerId])
-  @@index([followingId])
+  @@index([followerId, followingId])  // Optimized index for efficient lookups
 }
 
 model Post {

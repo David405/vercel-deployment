@@ -75,3 +75,22 @@ export class UserController {
 		);
 	});
 }
+
+  /*
+   * Gets user's metadata by username
+   * @param req Express request object
+   * @param res Express response object
+   */
+  getUsersMetadata = asyncHandler(async (req: Request, res: Response) => {
+    customRequestHandler(
+      req,
+      res,
+      StatusCodes.OK,
+      { paramSchema: UserValidation.usernameSchema },
+      async (req: Request) => {
+        return await this.userService.getUsersMetadata(req.params.username);
+      }
+    );
+  });
+}
+
