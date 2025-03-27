@@ -49,20 +49,45 @@ export class UserService {
 		this.userRepository = new UserRepository();
 	}
 
-	/**
-	 * Creates a new user profile with associated web3 account
-	 * @param userData The user data to create
-	 * @returns The created user and web3 account
-	 */
-	async createUser(
-		userData: CreateUserBody
-	): Promise<{ profile: User; wallet: PrismaWeb3Account }> {
-		//Validate username
-		validateObjectOrThrowError(
-			userData as unknown as Record<string, unknown>,
-			UserValidation.createUserSchema,
-			'Validation Error in createUser function'
-		);
+  /**
+   * Creates a new user profile with associated web3 account
+   * @param userData The user data to create
+   * @returns The created user and web3 account
+   */
+  async createUser(
+    userData: CreateUserBody
+  ): Promise<{ profile: User; wallet: PrismaWeb3Account }> {
+    //Validate username
+    const validatedUserData = validateObjectOrThrowError(
+      userData as unknown as Record<string, unknown>,
+      UserValidation.createUserSchema,
+      "Validation Error in createUser function"
+    );
+    userData = validatedUserData;
+
+    // Validate username
+    const usernameValidationResult = await this.validateUsername(
+      userData.username
+    );
+    if (!usernameValidationResult.valid) {
+      throw new Error(usernameValidationResult.message);
+    }
+
+    // Validate wallet address
+    const addressValidationResult = await this.validateAddress(
+      userData.account
+    );
+    if (!addressValidationResult.valid) {
+      throw new Error(addressValidationResult.message);
+    }
+
+    // Validate email
+    if (userData.type === "turnkey") {
+      const emailValidateResult = await this.validateEmail(userData.email);
+      if (!emailValidateResult.valid) {
+        throw new Error(emailValidateResult.message);
+      }
+    }
 
 		// Verfiy signature
 		const isValidSignature = await verifySignature(userData.message, userData.signature);
@@ -125,36 +150,36 @@ export class UserService {
 		};
 	}
 
-	/**
-	 * Validates if a username is available
-	 * @param username The username to validate
-	 * @returns Object indicating validity and a message
-	 */
-	async validateUsername(username: string): Promise<IValidationResponse> {
-		try {
-			validateObjectOrThrowError(
-				{ username },
-				UserValidation.usernameSchema,
-				'Validation Error in validateUsername function'
-			);
-		} catch (error) {
-			const validationError = error as { cause: string };
-			return { valid: false, message: validationError.cause };
-		}
+  /**
+   * Validates if a username is available
+   * @param username The username to validate
+   * @returns Object indicating validity and a message
+   */
+  async validateUsername(username: string): Promise<IValidationResponse> {
+    try {
+      const validatedData = validateObjectOrThrowError(
+        { username },
+        UserValidation.usernameSchema,
+        "Validation Error in validateUsername function"
+      );
+      username = validatedData.username;
+    } catch (error) {
+      const validationError = error as { cause: string };
+      return { valid: false, message: validationError.cause };
+    }
 
-		// Check if username contains banned words
-		// TODO: Check if username contains banned words
-		const bannedWords: string[] = []; // This should be populated from a configuration or database
-		if (bannedWords.some((word) => username.includes(word))) {
-			return { valid: false, message: 'Username contains banned words' };
-		}
-
-		// Check if username already exists
-		const existingUser = await this.userRepository.findUserByUsername(username);
-		return existingUser
-			? { valid: false, message: 'Username is already taken' }
-			: { valid: true, message: 'Username is available' };
-	}
+    // Check if username contains banned words
+    // TODO: Check if username contains banned words
+    const bannedWords: string[] = []; // This should be populated from a configuration or database
+    if (bannedWords.some((word) => username.includes(word))) {
+      return { valid: false, message: "Username contains banned words" };
+    }
+    // Check if username already exists
+    const existingUser = await this.userRepository.findUserByUsername(username);
+    return existingUser
+      ? { valid: false, message: "Username is already taken" }
+      : { valid: true, message: "Username is available" };
+  }
 
 	/**
 	 * Validates an email address
@@ -218,14 +243,19 @@ export class UserService {
 		}
 	}
 
-	async getSuggestedUsersToFollow(userId: string, count: number): Promise<unknown> {
-		return await this.userRepository.findSuggestedUsers(userId, count);
-	}
+
 
 	async getUsersMetadata(username: string): Promise<Partial<UserProfile>> {
+		const validatedData = validateObjectOrThrowError(
+		  { username },
+		  UserValidation.usernameSchema,
+		  "Validation Error in validateUsername function"
+		);
+		username = validatedData.username;
+	
 		const user = await this.userRepository.getUserByUsername(username);
 		if (!user) {
-			throw CustomError.NotFound('User not found');
+		  throw CustomError.NotFound("User not found");
 		}
 
 		return {
