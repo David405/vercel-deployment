@@ -1,6 +1,6 @@
-import { createHmac } from "crypto";
-import jwt from "jsonwebtoken";
-import { v4 as uuidv4 } from "uuid";
+import { createHmac } from 'crypto';
+import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 
 import { CustomError } from "../utils/errors";
 import { getAddressFromMessage, getChainIdFromMessage } from "../utils/helpers";
@@ -11,16 +11,17 @@ import { verifySignature } from "../utils/verifySignature";
 import { AuthValidation } from "../validations";
 
 export type Web3AccountData = {
-  address: string;
-  chainId: string;
+	address: string;
+	chainId: string;
 };
 
 export enum ChainAllowed {
-  ETHEREUM = "ethereum",
-  SOLANA = "solana",
+	ETHEREUM = 'ethereum',
+	SOLANA = 'solana'
 }
 
 export class AuthService {
+
   private authRepository: AuthRepository;
   private secret: string | undefined;
 
