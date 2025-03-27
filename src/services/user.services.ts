@@ -58,11 +58,32 @@ export class UserService {
 		userData: CreateUserBody
 	): Promise<{ profile: User; wallet: PrismaWeb3Account }> {
 		//Validate username
-		validateObjectOrThrowError(
+		const validatedUserData = validateObjectOrThrowError(
 			userData as unknown as Record<string, unknown>,
 			UserValidation.createUserSchema,
 			'Validation Error in createUser function'
 		);
+		userData = validatedUserData;
+
+		// Validate username
+		const usernameValidationResult = await this.validateUsername(userData.username);
+		if (!usernameValidationResult.valid) {
+			throw new Error(usernameValidationResult.message);
+		}
+
+		// Validate wallet address
+		const addressValidationResult = await this.validateAddress(userData.account);
+		if (!addressValidationResult.valid) {
+			throw new Error(addressValidationResult.message);
+		}
+
+		// Validate email
+		if (userData.type === 'turnkey') {
+			const emailValidateResult = await this.validateEmail(userData.email);
+			if (!emailValidateResult.valid) {
+				throw new Error(emailValidateResult.message);
+			}
+		}
 
 		// Verfiy signature
 		const isValidSignature = await verifySignature(userData.message, userData.signature);
@@ -132,11 +153,12 @@ export class UserService {
 	 */
 	async validateUsername(username: string): Promise<IValidationResponse> {
 		try {
-			validateObjectOrThrowError(
+			const validatedData = validateObjectOrThrowError(
 				{ username },
 				UserValidation.usernameSchema,
 				'Validation Error in validateUsername function'
 			);
+			username = validatedData.username;
 		} catch (error) {
 			const validationError = error as { cause: string };
 			return { valid: false, message: validationError.cause };
@@ -148,7 +170,6 @@ export class UserService {
 		if (bannedWords.some((word) => username.includes(word))) {
 			return { valid: false, message: 'Username contains banned words' };
 		}
-
 		// Check if username already exists
 		const existingUser = await this.userRepository.findUserByUsername(username);
 		return existingUser
@@ -223,6 +244,13 @@ export class UserService {
 	}
 
 	async getUsersMetadata(username: string): Promise<Partial<UserProfile>> {
+		const validatedData = validateObjectOrThrowError(
+			{ username },
+			UserValidation.usernameSchema,
+			'Validation Error in validateUsername function'
+		);
+		username = validatedData.username;
+
 		const user = await this.userRepository.getUserByUsername(username);
 		if (!user) {
 			throw CustomError.NotFound('User not found');
