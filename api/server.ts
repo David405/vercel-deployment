@@ -7,7 +7,7 @@ import csrf from 'csurf';
 import dotenv from 'dotenv';
 import express, { Request, Response, NextFunction } from 'express';
 import session from 'express-session';
-import { readdirSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 // import { errorHandler } from '../src/utils/errors/index.ts';
 
 // Load environment variables
@@ -77,13 +77,17 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Dynamically import routes
-readdirSync('../src/routes').forEach(async (file) => {
-  if (file.endsWith('.ts')) {
-    const route = await import(`./routes/${file}`);
-    app.use('/api', route.default);
-  }
-});
+// Dynamic route loading with error handling
+if (existsSync('../src/routes')) {
+  readdirSync('../src/routes').forEach(async (file) => {
+    if (file.endsWith('.ts')) {
+      const route = await import(`../src/routes/${file}`);
+      app.use('/api', route.default);
+    }
+  });
+} else {
+  console.warn('No routes directory found at ../src/routes');
+}
 
 // CSRF token endpoint
 app.get('/api/security/csrf-token', (req: Request, res: Response) => {
