@@ -1,6 +1,6 @@
 // api/index.ts
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { PrismaClient } from '@prisma/client';
+// import { PrismaClient } from '@prisma/client';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import csrf from 'csurf';
@@ -13,7 +13,6 @@ import { readdirSync } from 'fs';
 // Load environment variables
 dotenv.config();
 
-const prisma = new PrismaClient();
 const app = express();
 const client = process.env.CLIENT;
 
@@ -133,4 +132,4 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-export { app, prisma };
+export { app };
