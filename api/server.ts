@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 import express, { Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 import { readdirSync } from 'fs';
-import { errorHandler } from '../src/utils/errors/index.ts';
+// import { errorHandler } from '../src/utils/errors/index.ts';
 
 // Load environment variables
 dotenv.config();
@@ -106,7 +106,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // Error handling middleware
-app.use(errorHandler);
+// app.use(errorHandler);
 
 // Vercel serverless handler
 export default async function handler(req: VercelRequest, res: VercelResponse) {
