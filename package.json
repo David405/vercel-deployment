@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/app.js",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'node --max-old-space-size=4096 --loader ts-node/esm --experimental-specifier-resolution=node' src/app.ts",
     "migrate": "npx prisma migrate dev",
