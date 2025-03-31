@@ -78,15 +78,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Dynamic route loading with error handling
-if (existsSync('../src/routes')) {
-  readdirSync('../src/routes').forEach(async (file) => {
+if (existsSync('./src/routes')) {
+  readdirSync('./src/routes').forEach(async (file) => {
     if (file.endsWith('.ts')) {
       const route = await import(`../src/routes/${file}`);
       app.use('/api', route.default);
     }
   });
 } else {
-  console.warn('No routes directory found at ../src/routes');
+  console.warn('No routes directory found at ./src/routes');
 }
 
 // CSRF token endpoint

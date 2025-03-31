@@ -6,12 +6,12 @@
       "esModuleInterop": true,
       "strict": false,
       "outDir": "./dist",
-      "rootDir": "./src",
+      "rootDir": "./api/src",
       "allowJs": true,
       "resolveJsonModule": true,
       "isolatedModules": true,
       "sourceMap": true
     },
-    "include": ["src/**/*", "src/types"],
+    "include": ["api/src/**/*", "src/**/*", "src/types"],
     "exclude": ["node_modules"]
   }
