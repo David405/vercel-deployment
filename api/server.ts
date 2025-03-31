@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 import express, { Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 import { readdirSync } from 'fs';
-import { errorHandler } from '../src/utils/errors/error-handler.utils';
+import { errorHandler } from '../src/utils/errors';
 
 // Load environment variables
 dotenv.config();
