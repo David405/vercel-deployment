@@ -2,7 +2,7 @@
   "name": "bloom-web-server",
   "version": "1.0.0",
   "main": "index.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "build": "prisma generate && tsc",
     "start": "node dist/app.js",
